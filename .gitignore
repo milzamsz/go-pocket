@@ -1,0 +1,33 @@
+# Binaries
+bin/
+dist/
+*.exe
+*.out
+
+# Env files
+.env
+.env.*
+!.env.example
+
+# PocketBase runtime data
+pb_data/
+
+# Local Stitch reference source
+docs/.stitch/
+
+# Generated assets
+assets/css/output.css
+assets/css/sources.generated.css
+
+# templ generated files
+*_templ.go
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Coverage / reports
+coverage.out
+*.coverprofile

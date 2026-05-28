@@ -1,0 +1,66 @@
+package marketing
+
+import "github.com/milzamsz/go-pocket/components/layouts"
+
+type BlogItem struct {
+	Title   string
+	Slug    string
+	Summary string
+}
+
+templ BlogIndex(items []BlogItem) {
+	@layouts.Surface(
+		layouts.Meta{Title: "Blog", Description: "Product and engineering updates"},
+		"Blog",
+		"Updates, changelogs, and build notes.",
+		BlogIndexBody(items),
+	)
+}
+
+templ BlogIndexBody(items []BlogItem) {
+	<div class="grid gap-6 lg:grid-cols-[0.78fr_1.22fr]">
+		<aside class="rounded-xl stitch-panel p-5">
+			<p class="font-display text-xs font-semibold uppercase tracking-[0.22em] text-indigo-500">System Log</p>
+			<h2 class="mt-3 font-display text-2xl font-semibold">Product notes, release traces, and field reports.</h2>
+			<p class="mt-3 text-sm leading-6 text-muted-foreground">A Stitch-style editorial surface for the engineering and operating story behind the starter.</p>
+			<div class="mt-5 space-y-2 text-xs text-muted-foreground">
+				<div class="flex items-center justify-between rounded-md stitch-panel-soft px-3 py-2"><span>Cadence</span><span class="font-medium text-foreground">Weekly</span></div>
+				<div class="flex items-center justify-between rounded-md stitch-panel-soft px-3 py-2"><span>Format</span><span class="font-medium text-foreground">Build Notes</span></div>
+			</div>
+		</aside>
+		<div class="space-y-3">
+		for _, item := range displayBlogItems(items) {
+			<article class="rounded-xl stitch-panel p-5 shadow-sm">
+				<a href={ "/blog/" + item.Slug } class="group flex items-start justify-between gap-4">
+					<div>
+						<div class="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 px-2 py-1 text-[11px] font-medium text-indigo-500">@layouts.Icon("filetext", "h-3.5 w-3.5")<span>Release Memo</span></div>
+						<h3 class="mt-3 font-display text-lg font-semibold group-hover:text-primary">{ item.Title }</h3>
+						<p class="mt-2 text-sm leading-6 text-muted-foreground">{ item.Summary }</p>
+					</div>
+					@layouts.Icon("arrow-right", "mt-1 h-4 w-4 shrink-0 text-muted-foreground group-hover:text-primary")
+				</a>
+			</article>
+		}
+		</div>
+	</div>
+}
+
+templ BlogPost(title string, summary string, htmlContent string) {
+	@layouts.Surface(
+		layouts.Meta{Title: title, Description: summary},
+		title,
+		summary,
+		templ.Raw(htmlContent),
+	)
+}
+
+func displayBlogItems(items []BlogItem) []BlogItem {
+	if len(items) > 0 {
+		return items
+	}
+	return []BlogItem{
+		{Title: "Welcome to go-pocket", Slug: "2026-05-27-welcome-to-go-pocket", Summary: "A tour through the tenant-aware app foundation, public surfaces, and operational dashboard language."},
+		{Title: "Frontend Scaffold Status", Slug: "2026-05-27-frontend-scaffold-status", Summary: "How the templ, Tailwind, HTMX, and Alpine layers fit together for production screens."},
+		{Title: "Technical Elegance Port", Slug: "technical-elegance-port", Summary: "Design system notes from adapting the Stitch reference into the Go/PocketBase architecture."},
+	}
+}

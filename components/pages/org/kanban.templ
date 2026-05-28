@@ -1,0 +1,232 @@
+package org
+
+import (
+	"fmt"
+	"github.com/milzamsz/go-pocket/components/layouts"
+	"github.com/milzamsz/go-pocket/internal/domain"
+)
+
+templ Kanban(slug string, cols []domain.KanbanColumn, cards []domain.KanbanCard) {
+	@page(slug, "Kanban", "Interactive task board with drag-and-drop workspace pipeline.", KanbanBody(slug, cols, cards))
+}
+
+templ KanbanBody(slug string, cols []domain.KanbanColumn, cards []domain.KanbanCard) {
+	<div class="space-y-6" x-data="{ openColModal: false, openCardModal: false, activeColID: '' }">
+		<!-- Kanban Page Header -->
+		<div class="flex items-center justify-between">
+			<div>
+				<h2 class="text-lg font-semibold text-foreground">Project Pipeline</h2>
+				<p class="text-xs text-muted-foreground">Drag and drop cards between lanes to update progress status.</p>
+			</div>
+			<!-- Actions -->
+			<div class="flex items-center gap-2">
+				<button @click="openColModal = true" class="font-display inline-flex items-center justify-center rounded-lg stitch-panel px-4 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-[#181b24] hover:text-foreground text-foreground transition-colors">
+					Add Column
+				</button>
+			</div>
+		</div>
+
+		<!-- New Column Modal -->
+		<div x-show="openColModal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
+			<div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+			<div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="openColModal = false" class="relative transform overflow-hidden rounded-xl stitch-panel text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+						<form method="post" action={ "/org/" + slug + "/kanban/columns" } class="space-y-4 p-6">
+							<div class="border-b border-slate-200 dark:border-[#1b1f29] pb-3">
+								<h3 class="font-display text-lg font-medium text-foreground">Create Kanban Column</h3>
+								<p class="text-xs text-muted-foreground">Add a new workflow lane to your board.</p>
+							</div>
+							<div>
+								<label class="block text-xs font-medium text-muted-foreground" for="col-name">Column Name</label>
+								<input id="col-name" name="name" type="text" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="e.g. In Review" required />
+							</div>
+							<div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#1b1f29]">
+								<button type="button" @click="openColModal = false" class="rounded-lg border border-slate-200 dark:border-[#1b1f29] px-4 py-2 text-sm font-medium hover:bg-muted/50 text-foreground">Cancel</button>
+								<button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Add Column</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- New Card Modal -->
+		<div x-show="openCardModal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
+			<div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+			<div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="openCardModal = false" class="relative transform overflow-hidden rounded-xl stitch-panel text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-md">
+						<form method="post" action={ "/org/" + slug + "/kanban/cards" } class="space-y-4 p-6">
+							<input type="hidden" name="column" :value="activeColID" />
+							<div class="border-b border-slate-200 dark:border-[#1b1f29] pb-3">
+								<h3 class="font-display text-lg font-medium text-foreground">Add Task Card</h3>
+								<p class="text-xs text-muted-foreground">Specify the task details to place in the lane.</p>
+							</div>
+							<div class="space-y-3">
+								<div>
+									<label class="block text-xs font-medium text-muted-foreground" for="card-title">Task Title</label>
+									<input id="card-title" name="title" type="text" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="e.g. Wireframe settings" required />
+								</div>
+								<div>
+									<label class="block text-xs font-medium text-muted-foreground" for="card-desc">Description</label>
+									<textarea id="card-desc" name="description" rows="3" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-foreground" placeholder="Task description..."></textarea>
+								</div>
+								<div>
+									<label class="block text-xs font-medium text-muted-foreground" for="card-badge">Label/Badge</label>
+									<input id="card-badge" name="badge" type="text" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="e.g. Design, High Priority" />
+								</div>
+							</div>
+							<div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#1b1f29]">
+								<button type="button" @click="openCardModal = false" class="rounded-lg border border-slate-200 dark:border-[#1b1f29] px-4 py-2 text-sm font-medium hover:bg-muted/50 text-foreground">Cancel</button>
+								<button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Create Card</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Kanban Board Layout -->
+		<div class="flex gap-4 overflow-x-auto pb-4 items-start select-none">
+			for _, col := range cols {
+				<div class="w-80 shrink-0 flex flex-col rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-[#1b1f29] dark:bg-[#111319]/60">
+					<!-- Column Header -->
+					<div class="flex items-center justify-between mb-4 border-b border-slate-200 dark:border-[#1b1f29]/40 pb-2">
+						<div class="flex items-center gap-2">
+							<h3 class="font-display font-semibold text-foreground text-sm">{ col.Name }</h3>
+							<span class="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400">
+								{ fmt.Sprintf("%d", countCards(cards, col.ID)) }
+							</span>
+						</div>
+					</div>
+
+					<!-- Column Body (Draggable Cards) -->
+					<div
+						id={ "column-cards-" + col.ID }
+						data-column-id={ col.ID }
+						data-slug={ slug }
+						data-sortable-group="kanban"
+						class="space-y-3 min-h-[150px] flex-1 pb-4"
+					>
+						for _, card := range cards {
+							if card.ColumnID == col.ID {
+								<div
+									data-card-id={ card.ID }
+									class="relative rounded-lg border border-slate-200 dark:border-[#1b1f29] bg-slate-100 dark:bg-[#181b24]/50 hover:border-indigo-500/40 p-4 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all group"
+								>
+									<!-- Card Actions -->
+									<div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+										<button
+											hx-delete={ "/org/" + slug + "/kanban/cards/" + card.ID }
+											hx-confirm="Delete this task card?"
+											class="font-display text-red-400 hover:text-red-300 text-xs font-medium bg-transparent border-0 cursor-pointer outline-none"
+										>
+											Delete
+										</button>
+									</div>
+
+									<!-- Card Header Badge -->
+									if card.Badge != "" {
+										<span class="font-display inline-flex items-center rounded bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-medium text-indigo-400 mb-2">
+											{ card.Badge }
+										</span>
+									}
+
+									<!-- Title & Description -->
+									<h4 class="font-display text-sm font-semibold text-foreground mb-1 leading-snug">{ card.Title }</h4>
+									if card.Description != "" {
+										<p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{ card.Description }</p>
+									}
+
+									<!-- Card Footer Info -->
+									<div class="font-display mt-4 flex items-center justify-between text-[10px] text-muted-foreground">
+										<div class="flex items-center gap-1">
+											@layouts.Icon("kanban", "h-3.5 w-3.5")
+											{ card.CreatedAt.Format("Jan 02") }
+										</div>
+									</div>
+								</div>
+							}
+						}
+					</div>
+
+					<!-- Bottom Action to Add Card -->
+					<button
+						@click={ fmt.Sprintf("activeColID = '%s'; openCardModal = true", col.ID) }
+						class="font-display w-full mt-2 inline-flex items-center justify-center rounded-lg border border-dashed border-slate-200 dark:border-[#1b1f29] bg-slate-50 dark:bg-[#0d0f14] py-2 text-xs font-medium text-muted-foreground hover:bg-slate-100 dark:hover:bg-[#181b24] hover:text-foreground transition-colors cursor-pointer"
+					>
+						@layouts.Icon("plus", "mr-1.5 h-3.5 w-3.5")
+						Add Card
+					</button>
+				</div>
+			}
+
+			if len(cols) == 0 {
+				<div class="flex-1 rounded-xl border border-dashed border-slate-200 dark:border-[#1b1f29] p-12 text-center">
+					<h3 class="text-sm font-semibold text-foreground">No Columns Yet</h3>
+					<p class="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">Create a workflow column first to start adding task cards.</p>
+					<button @click="openColModal = true" class="mt-4 inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+						Add Workflow Column
+					</button>
+				</div>
+			}
+		</div>
+	</div>
+
+	<!-- SortableJS Dynamic Script -->
+	<script src="/assets/js/sortable.min.js"></script>
+	<script>
+		(function() {
+			const initKanban = () => {
+				document.querySelectorAll('[data-sortable-group="kanban"]').forEach(el => {
+					if (el.dataset.sortableInitialized) return;
+					el.dataset.sortableInitialized = "true";
+					
+					new Sortable(el, {
+						group: 'kanban',
+						animation: 150,
+						ghostClass: 'opacity-40',
+						dragClass: 'rotate-1',
+						onEnd: (e) => {
+							const cardId = e.item.getAttribute('data-card-id');
+							const toColumn = e.to.getAttribute('data-column-id');
+							const toIndex = e.newIndex;
+							const slug = el.getAttribute('data-slug');
+							
+							const formData = new FormData();
+							formData.append('card_id', cardId);
+							formData.append('to_column', toColumn);
+							formData.append('to_index', toIndex);
+
+							htmx.ajax('POST', '/org/' + slug + '/kanban/reorder', {
+								values: {
+									card_id: cardId,
+									to_column: toColumn,
+									to_index: toIndex
+								}
+							});
+						}
+					});
+				});
+			};
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', initKanban);
+			} else {
+				initKanban();
+			}
+			document.body.addEventListener('htmx:afterOnLoad', initKanban);
+		})();
+	</script>
+}
+
+func countCards(cards []domain.KanbanCard, colID string) int {
+	count := 0
+	for _, c := range cards {
+		if c.ColumnID == colID {
+			count++
+		}
+	}
+	return count
+}

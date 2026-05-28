@@ -1,0 +1,15 @@
+.git
+.github
+.agents
+docs
+pb_data
+bin
+dist
+.env
+.env.*
+!.env.example
+**/*_test.go
+coverage.out
+*.coverprofile
+node_modules
+

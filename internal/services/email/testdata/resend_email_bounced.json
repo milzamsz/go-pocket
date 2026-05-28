@@ -1,0 +1,8 @@
+{
+  "type": "email.bounced",
+  "created_at": "2026-05-27T08:15:00Z",
+  "data": {
+    "message_id": "msg_bounced_001",
+    "recipient": "bounced@example.com"
+  }
+}

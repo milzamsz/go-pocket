@@ -1,0 +1,81 @@
+version: "3"
+
+vars:
+  APP_NAME: go-pocket
+  BIN_DIR: bin
+  BIN_PATH: "{{.BIN_DIR}}/{{.APP_NAME}}"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  "css:build":
+    desc: Build Tailwind output.css
+    cmds:
+      - go run ./cmd/cssbuild
+
+  deps:
+    desc: Download Go dependencies
+    cmds:
+      - go mod download
+
+  "templ:generate":
+    desc: Generate templ code
+    cmds:
+      - templ generate
+
+  lint:
+    desc: Run linters
+    cmds:
+      - gofmt -s -w .
+      - go vet ./...
+
+  test:
+    desc: Run test suite
+    cmds:
+      - go test -race -cover ./...
+
+  build:
+    desc: Build production binary
+    cmds:
+      - task css:build
+      - mkdir -p {{.BIN_DIR}}
+      - go build -trimpath -ldflags "-s -w" -o {{.BIN_PATH}} .
+
+  ci:
+    desc: CI parity checks
+    cmds:
+      - task deps
+      - task css:build
+      - task templ:generate
+      - task lint
+      - task test
+      - task build
+
+  migrate:
+    desc: Run pending PocketBase migrations
+    cmds:
+      - go run . migrate up
+
+  "migrate:create":
+    desc: "Create a new migration (usage: task migrate:create -- add_name_here)"
+    cmds:
+      - go run . migrate create {{.CLI_ARGS}}
+
+  seed:
+    desc: Seed development data
+    cmds:
+      - go run . seed
+
+  smoke:local:
+    desc: Run local smoke checks against a running server
+    cmds:
+      - go run . smoke-local
+
+  dev:
+    desc: Run local development loop
+    cmds:
+      - task css:build
+      - go run . serve --http=0.0.0.0:8090

@@ -1,0 +1,168 @@
+package app
+
+import "github.com/milzamsz/go-pocket/components/layouts"
+
+templ Dashboard() {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Dashboard", Description: "Application dashboard"},
+		"Application",
+		"Workspace Dashboard",
+		"Personal workspace overview with organization and billing signals.",
+		appNav("/app/"),
+		DashboardBody(),
+	)
+}
+
+templ Onboarding() {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Onboarding", Description: "Create your first workspace"},
+		"Application",
+		"Welcome aboard.",
+		"Create your first organization workspace to continue.",
+		appNav("/app/onboarding"),
+		OnboardingBody(),
+	)
+}
+
+templ SettingsProfile() {
+	@settingsShell("Profile", "Manage your profile details.", "/app/settings/profile")
+}
+
+templ SettingsSecurity() {
+	@settingsShell("Security", "Password and session controls.", "/app/settings/security")
+}
+
+templ SettingsAccount() {
+	@settingsShell("Account", "Language, theme, and account preferences.", "/app/settings/account")
+}
+
+templ settingsShell(title string, subtitle string, postAction string) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: title + " Settings", Description: subtitle},
+		"Application",
+		title + " Settings",
+		subtitle,
+		appNav(postAction),
+		SettingsForm(postAction),
+	)
+}
+
+templ SettingsForm(postAction string) {
+	<form method="post" action={ postAction } class="max-w-xl space-y-4">
+		if postAction == "/app/settings/profile" {
+			<div class="rounded-xl stitch-panel p-4 shadow-sm">
+				<div class="mb-3 flex items-center gap-2">
+					@layouts.Icon("user", "h-4 w-4 text-primary")
+					<h3 class="font-display text-sm font-semibold">Profile Information</h3>
+				</div>
+				<div class="space-y-3">
+					<div>
+						<label class="mb-1 block text-sm font-medium" for="profile-name">Display Name</label>
+						<input id="profile-name" name="name" type="text" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" placeholder="Jane Doe"/>
+					</div>
+					<div>
+						<label class="mb-1 block text-sm font-medium" for="profile-email">Email Address</label>
+						<input id="profile-email" name="email" type="email" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" placeholder="jane@company.com"/>
+					</div>
+				</div>
+			</div>
+		} else if postAction == "/app/settings/security" {
+			<div class="rounded-xl stitch-panel p-4 shadow-sm">
+				<div class="mb-3 flex items-center gap-2">
+					@layouts.Icon("shield", "h-4 w-4 text-primary")
+					<h3 class="font-display text-sm font-semibold">Security Controls</h3>
+				</div>
+				<div class="space-y-3">
+					<div>
+						<label class="mb-1 block text-sm font-medium" for="security-password">New Password</label>
+						<input id="security-password" name="password" type="password" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" placeholder="Enter a strong password"/>
+					</div>
+					<div class="rounded-md stitch-panel-soft px-3 py-2 text-sm text-muted-foreground">
+						Require two-factor authentication on next login.
+					</div>
+				</div>
+			</div>
+		} else {
+			<div class="rounded-xl stitch-panel p-4 shadow-sm">
+				<div class="mb-3 flex items-center gap-2">
+					@layouts.Icon("settings", "h-4 w-4 text-primary")
+					<h3 class="font-display text-sm font-semibold">Account Preferences</h3>
+				</div>
+				<div class="space-y-3">
+					<div>
+						<label class="mb-1 block text-sm font-medium" for="account-language">Language</label>
+						<select id="account-language" name="language" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2">
+							<option value="en">English</option>
+							<option value="id">Bahasa Indonesia</option>
+						</select>
+					</div>
+					<div class="rounded-md stitch-panel-soft px-3 py-2 text-sm text-muted-foreground">
+						Theme preference follows the global toggle in the top bar.
+					</div>
+				</div>
+			</div>
+		}
+		<button class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" type="submit">Save Changes</button>
+	</form>
+}
+
+templ Placeholder(message string) {
+	<div class="rounded-xl stitch-panel p-4 text-sm text-muted-foreground shadow-sm">{ message }</div>
+}
+
+templ DashboardBody() {
+	<div class="space-y-5">
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			<div class="rounded-xl stitch-panel p-4 shadow-sm"><div class="text-xs text-muted-foreground">Active Organizations</div><div class="mt-1 text-2xl font-semibold">3</div></div>
+			<div class="rounded-xl stitch-panel p-4 shadow-sm"><div class="text-xs text-muted-foreground">Open Invitations</div><div class="mt-1 text-2xl font-semibold">4</div></div>
+			<div class="rounded-xl stitch-panel p-4 shadow-sm"><div class="text-xs text-muted-foreground">Billing Health</div><div class="mt-1 text-2xl font-semibold text-success-foreground">Good</div></div>
+			<div class="rounded-xl stitch-panel p-4 shadow-sm"><div class="text-xs text-muted-foreground">Security Tasks</div><div class="mt-1 text-2xl font-semibold text-warning-foreground">2</div></div>
+		</div>
+		<div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+			<div class="rounded-xl stitch-panel p-4 shadow-sm">
+				<div class="text-sm font-semibold">Recent Activity</div>
+				<div class="mt-3 space-y-2 text-sm">
+					<div class="rounded-md stitch-panel-soft px-3 py-2">New member invited to <span class="font-medium">acme</span></div>
+					<div class="rounded-md stitch-panel-soft px-3 py-2">Password reset token consumed successfully</div>
+					<div class="rounded-md stitch-panel-soft px-3 py-2">Subscription webhook synced with organization plan field</div>
+				</div>
+			</div>
+			<div class="rounded-xl stitch-panel p-4 shadow-sm">
+				<div class="text-sm font-semibold">Quick Actions</div>
+				<div class="mt-3 grid gap-2">
+					<a href="/app/settings/profile" class="rounded-md stitch-panel-soft px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-[#181b24]">Update profile</a>
+					<a href="/app/settings/security" class="rounded-md stitch-panel-soft px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-[#181b24]">Security controls</a>
+					<a href="/app/settings/account" class="rounded-md stitch-panel-soft px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-[#181b24]">Account preferences</a>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ OnboardingBody() {
+	<form method="post" action="/app/onboarding" class="max-w-xl space-y-4 rounded-xl stitch-panel p-5 shadow-sm">
+		<div>
+			<h2 class="text-lg font-semibold text-card-foreground">Set up your workspace</h2>
+			<p class="mt-1 text-sm text-muted-foreground">This organization becomes your default tenant context.</p>
+		</div>
+		<div>
+			<label class="mb-1 block text-sm font-medium" for="organization-name">Organization Name</label>
+			<input id="organization-name" name="organization_name" type="text" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" placeholder="Acme Systems" required/>
+		</div>
+		<div>
+			<label class="mb-1 block text-sm font-medium" for="organization-slug">Organization Slug</label>
+			<input id="organization-slug" name="organization_slug" type="text" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" placeholder="acme" required/>
+		</div>
+		<button class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground" type="submit">Create Workspace</button>
+	</form>
+}
+
+func appNav(active string) []layouts.NavItem {
+	return []layouts.NavItem{
+		{Label: "Overview", Href: "/app/", Active: active == "/app/"},
+		{Label: "Onboarding", Href: "/app/onboarding", Active: active == "/app/onboarding"},
+		{Label: "Profile", Href: "/app/settings/profile", Active: active == "/app/settings/profile"},
+		{Label: "Security", Href: "/app/settings/security", Active: active == "/app/settings/security" || active == "/app/settings/security/password" || active == "/app/settings/security/2fa"},
+		{Label: "Account", Href: "/app/settings/account", Active: active == "/app/settings/account"},
+	}
+}

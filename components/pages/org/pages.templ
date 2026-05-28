@@ -1,0 +1,256 @@
+package org
+
+import (
+	"fmt"
+
+	"github.com/milzamsz/go-pocket/components/layouts"
+	"github.com/milzamsz/go-pocket/internal/domain"
+)
+
+templ Overview(slug string) {
+	@page(slug, "Overview", "Organization summary and quick actions.", DefaultBody(slug, "Overview"))
+}
+
+templ Members(slug string, members []domain.OrganizationMember) {
+	@page(slug, "Members", "Manage roles, invitations, and membership.", MembersBody(slug, members))
+}
+
+templ Invitations(slug string) {
+	@page(slug, "Invitations", "Pending invites and follow-up actions.", InvitationsBody(slug))
+}
+
+templ Billing(slug string) {
+	@page(slug, "Billing", "Plan, subscription state, and invoices.", BillingBody(slug))
+}
+
+templ Settings(slug string) {
+	@page(slug, "Settings", "General organization configuration.", SettingsBody(slug))
+}
+
+templ SettingsDanger(slug string) {
+	@page(slug, "Danger Zone", "Ownership transfer and organization deletion.", SettingsDangerBody(slug))
+}
+
+templ Audit(slug string) {
+	@page(slug, "Audit Log", "Track organization-level actions.", DefaultBody(slug, "Audit Log"))
+}
+
+templ MemberProfile(slug string, profile domain.OrganizationMemberProfile) {
+	@page(slug, "Members", "Member profile and access summary.", MemberProfileBody(slug, profile))
+}
+
+templ ProductDetail(slug string, product domain.Product) {
+	@page(slug, "Products", "Product details and metadata.", ProductDetailBody(slug, product))
+}
+
+templ page(slug string, title string, subtitle string, body templ.Component) {
+	@layouts.DashboardSurface(
+		layouts.Meta{
+			Title:       title + " - " + slug,
+			Description: subtitle,
+		},
+		"Organization",
+		title+" Workspace",
+		"Org: "+slug+" | "+subtitle,
+		orgSideNav(slug, title),
+		body,
+	)
+}
+
+templ DefaultBody(slug string, title string) {
+	<div class="space-y-4">
+		<div class="rounded-xl stitch-panel p-4 text-sm text-muted-foreground shadow-sm">
+			TODO: wire real data and actions for the <span class="font-medium text-foreground">{ title }</span> page.
+		</div>
+	</div>
+}
+
+templ MembersBody(slug string, members []domain.OrganizationMember) {
+	<div class="space-y-4">
+		<div class="overflow-hidden rounded-xl stitch-panel shadow-sm">
+			<div class="border-b border-slate-200 dark:border-[#1b1f29] px-4 py-3">
+				<h2 class="font-display text-sm font-medium">Organization Members</h2>
+				<p class="mt-1 text-xs text-muted-foreground">Member records are loaded from the tenancy service.</p>
+			</div>
+			if len(members) == 0 {
+				<div class="px-4 py-6 text-sm text-muted-foreground">No members found for this organization.</div>
+			} else {
+				<div class="overflow-x-auto">
+					<table class="min-w-full text-sm">
+						<thead class="border-b border-slate-200 dark:border-[#1b1f29] bg-slate-100 dark:bg-[#181b24] text-left text-muted-foreground">
+							<tr>
+								<th class="px-4 py-2 font-medium">User ID</th>
+								<th class="px-4 py-2 font-medium">Role</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, member := range members {
+								<tr class="border-t border-slate-200 dark:border-[#1b1f29] hover:bg-slate-100 dark:hover:bg-[#181b24]/50">
+									<td class="px-4 py-2 font-mono text-xs">
+										<a href={ "/org/" + slug + "/members/" + member.UserID } class="hover:text-primary hover:underline">{ member.UserID }</a>
+									</td>
+									<td class="px-4 py-2 capitalize">
+										<span class="rounded-full bg-indigo-500/10 px-2 py-1 text-xs font-medium text-indigo-400">{ fmt.Sprintf("%s", member.Role) }</span>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</div>
+	</div>
+}
+
+templ InvitationsBody(slug string) {
+	<div class="space-y-4">
+		<form method="post" action={ "/org/" + slug + "/members/invite" } class="max-w-xl space-y-3 rounded-xl stitch-panel p-4 shadow-sm">
+			<div class="font-display text-sm font-medium">Invite Member</div>
+			<div>
+				<label class="mb-1 block text-sm font-medium" for="invite-email">Email</label>
+				<input id="invite-email" name="email" type="email" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" required/>
+			</div>
+			<div>
+				<label class="mb-1 block text-sm font-medium" for="invite-role">Role</label>
+				<select id="invite-role" name="role" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2">
+					<option value="member">Member</option>
+					<option value="admin">Admin</option>
+					<option value="viewer">Viewer</option>
+				</select>
+			</div>
+			<button type="submit" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Send Invite</button>
+		</form>
+	</div>
+}
+
+templ BillingBody(slug string) {
+	<div class="space-y-4">
+		<div class="rounded-xl stitch-panel p-4 shadow-sm">
+			<h2 class="font-display text-sm font-medium">Subscription</h2>
+			<p class="mt-1 text-sm text-muted-foreground">Plan and invoices are still scaffolded, but actions post to real billing routes.</p>
+			<div class="mt-4 grid gap-2 sm:grid-cols-3">
+				<form method="post" action={ "/org/" + slug + "/billing/checkout" }>
+					<button type="submit" class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Start Checkout</button>
+				</form>
+				<form method="post" action={ "/org/" + slug + "/billing/portal" }>
+					<button type="submit" class="w-full rounded-md stitch-panel-soft px-4 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-[#181b24]">Open Billing Portal</button>
+				</form>
+				<a href={ "/org/" + slug + "/billing/invoices" } class="inline-flex items-center justify-center rounded-md stitch-panel-soft px-4 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-[#181b24]">View Invoices</a>
+			</div>
+		</div>
+	</div>
+}
+
+templ SettingsBody(slug string) {
+	<div class="space-y-4">
+		<form method="post" action={ "/org/" + slug + "/settings" } class="max-w-xl space-y-3 rounded-xl stitch-panel p-4 shadow-sm">
+			<div class="font-display text-sm font-medium">Organization Settings</div>
+			<div>
+				<label class="mb-1 block text-sm font-medium" for="org-name">Display Name</label>
+				<input id="org-name" name="name" type="text" class="w-full rounded-md stitch-panel-soft px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2" placeholder="Organization name"/>
+			</div>
+			<button type="submit" class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Save Settings</button>
+		</form>
+	</div>
+}
+
+templ SettingsDangerBody(slug string) {
+	<div class="space-y-4">
+		<div class="rounded-xl border border-destructive/40 bg-white dark:bg-[#111319] p-4 shadow-sm">
+			<div class="text-sm font-medium text-destructive">Danger Zone</div>
+			<p class="mt-1 text-sm text-muted-foreground">Transfer ownership or schedule deletion through protected actions.</p>
+			<div class="mt-4 flex flex-wrap gap-2">
+				<form method="post" action={ "/org/" + slug + "/settings/transfer" }>
+					<button type="submit" class="inline-flex items-center rounded-md border border-destructive px-4 py-2 text-sm font-medium text-destructive">Transfer Ownership</button>
+				</form>
+				<form method="post" action={ "/org/" + slug + "/settings/delete" }>
+					<button type="submit" class="inline-flex items-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground">Delete Organization</button>
+				</form>
+			</div>
+		</div>
+	</div>
+}
+
+templ MemberProfileBody(slug string, profile domain.OrganizationMemberProfile) {
+	<div class="space-y-4">
+		<div class="rounded-xl stitch-panel p-5 shadow-sm">
+			<div class="text-xs uppercase tracking-wide text-muted-foreground">Member Profile</div>
+			<h2 class="mt-2 text-xl font-semibold text-card-foreground">{ profile.Name }</h2>
+			<p class="mt-1 text-sm text-muted-foreground">{ profile.Email }</p>
+			<div class="mt-4 grid gap-3 sm:grid-cols-2">
+				<div class="rounded-md stitch-panel-soft p-3">
+					<div class="text-xs text-muted-foreground">User ID</div>
+					<div class="mt-1 font-mono text-xs text-card-foreground">{ profile.UserID }</div>
+				</div>
+				<div class="rounded-md stitch-panel-soft p-3">
+					<div class="text-xs text-muted-foreground">Role</div>
+					<div class="mt-1 text-sm font-medium capitalize text-card-foreground">{ fmt.Sprintf("%s", profile.Role) }</div>
+				</div>
+			</div>
+			<div class="mt-5">
+				<a href={ "/org/" + slug + "/members" } class="inline-flex items-center rounded-md stitch-panel-soft px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-[#181b24]">Back to team</a>
+			</div>
+		</div>
+	</div>
+}
+
+templ ProductDetailBody(slug string, product domain.Product) {
+	<div class="space-y-4">
+		<div class="rounded-xl stitch-panel p-5 shadow-sm">
+			<div class="text-xs uppercase tracking-wide text-muted-foreground">Product Detail</div>
+			<h2 class="mt-2 text-xl font-semibold text-card-foreground">{ product.Name }</h2>
+			<div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+				<div class="rounded-md stitch-panel-soft p-3">
+					<div class="text-xs text-muted-foreground">Category</div>
+					<div class="mt-1 text-sm font-medium capitalize text-card-foreground">{ product.Category }</div>
+				</div>
+				<div class="rounded-md stitch-panel-soft p-3">
+					<div class="text-xs text-muted-foreground">Price</div>
+					<div class="mt-1 text-sm font-medium text-card-foreground">{ fmt.Sprintf("$%.2f", float64(product.Price)/100.0) }</div>
+				</div>
+				<div class="rounded-md stitch-panel-soft p-3">
+					<div class="text-xs text-muted-foreground">Stock</div>
+					<div class="mt-1 text-sm font-medium text-card-foreground">{ fmt.Sprintf("%d", product.Stock) }</div>
+				</div>
+				<div class="rounded-md stitch-panel-soft p-3">
+					<div class="text-xs text-muted-foreground">Status</div>
+					if product.Active {
+						<div class="mt-1 text-sm font-medium text-emerald-500">Active</div>
+					} else {
+						<div class="mt-1 text-sm font-medium text-zinc-400">Inactive</div>
+					}
+				</div>
+			</div>
+			<div class="mt-5">
+				<a href={ "/org/" + slug + "/products" } class="inline-flex items-center rounded-md stitch-panel-soft px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-[#181b24]">Back to products</a>
+			</div>
+		</div>
+	</div>
+}
+
+templ orgNav(slug string) {
+	<nav class="flex flex-wrap gap-2 rounded-md border border-border bg-card p-2 text-xs">
+		<a href={ "/org/" + slug } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Overview</a>
+		<a href={ "/org/" + slug + "/members" } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Members</a>
+		<a href={ "/org/" + slug + "/invitations" } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Invitations</a>
+		<a href={ "/org/" + slug + "/billing" } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Billing</a>
+		<a href={ "/org/" + slug + "/settings" } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Settings</a>
+		<a href={ "/org/" + slug + "/settings/danger" } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Danger</a>
+		<a href={ "/org/" + slug + "/audit" } class="rounded-md border border-border px-3 py-1 hover:bg-muted/50">Audit</a>
+	</nav>
+}
+
+func orgSideNav(slug string, title string) []layouts.NavItem {
+	base := "/org/" + slug
+	return []layouts.NavItem{
+		{Label: "Overview", Href: base, Active: title == "Overview"},
+		{Label: "Products", Href: base + "/products", Active: title == "Products"},
+		{Label: "Kanban", Href: base + "/kanban", Active: title == "Kanban"},
+		{Label: "Members", Href: base + "/members", Active: title == "Members"},
+		{Label: "Invitations", Href: base + "/invitations", Active: title == "Invitations"},
+		{Label: "Billing", Href: base + "/billing", Active: title == "Billing"},
+		{Label: "Settings", Href: base + "/settings", Active: title == "Settings"},
+		{Label: "Danger Zone", Href: base + "/settings/danger", Active: title == "Danger Zone"},
+		{Label: "Audit Log", Href: base + "/audit", Active: title == "Audit Log"},
+	}
+}

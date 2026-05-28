@@ -1,0 +1,10 @@
+{
+  "type": "customer.updated",
+  "data": {
+    "organization_id": "__ORG_ID__",
+    "customer": {
+      "id": "cus_fixture_999",
+      "external_id": "__ORG_SLUG__"
+    }
+  }
+}

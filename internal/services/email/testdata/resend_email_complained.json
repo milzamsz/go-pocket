@@ -1,0 +1,8 @@
+{
+  "type": "email.complained",
+  "created_at": "2026-05-27T08:30:00Z",
+  "data": {
+    "id": "msg_complained_001",
+    "email": "complained@example.com"
+  }
+}

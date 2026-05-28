@@ -1,0 +1,240 @@
+package admin
+
+import (
+	"fmt"
+	"net/url"
+
+	"github.com/milzamsz/go-pocket/components/layouts"
+)
+
+templ Dashboard(stats DashboardStats) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Admin Dashboard", Description: "Platform-level operations and health."},
+		"Platform Admin",
+		"Admin Dashboard",
+		"Platform-level operations and health.",
+		adminSideNav("dashboard"),
+		DashboardBody(stats),
+	)
+}
+
+templ Users(data UserListData) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Users", Description: "Search and inspect user records."},
+		"Platform Admin",
+		"Users",
+		"Search and inspect user records.",
+		adminSideNav("users"),
+		UsersBody(data),
+	)
+}
+
+templ UserDetail(data UserDetailData) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "User Detail: " + data.ID, Description: "Detailed user profile and activity."},
+		"Platform Admin",
+		"User Detail: "+data.ID,
+		"Detailed user profile and activity.",
+		adminSideNav("users"),
+		UserDetailBody(data),
+	)
+}
+
+templ Organizations(data OrganizationListData) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Organizations", Description: "Inspect tenant status and usage."},
+		"Platform Admin",
+		"Organizations",
+		"Inspect tenant status and usage.",
+		adminSideNav("organizations"),
+		OrganizationsBody(data),
+	)
+}
+
+templ OrganizationDetail(data OrganizationDetailData) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Organization Detail: " + data.ID, Description: "Tenant metadata and controls."},
+		"Platform Admin",
+		"Organization Detail: "+data.ID,
+		"Tenant metadata and controls.",
+		adminSideNav("organizations"),
+		OrganizationDetailBody(data),
+	)
+}
+
+templ Analytics(rows []OrganizationRow) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Analytics", Description: "Usage and retention overview."},
+		"Platform Admin",
+		"Analytics",
+		"Usage and retention overview.",
+		adminSideNav("analytics"),
+		AnalyticsBody(rows),
+	)
+}
+
+templ Settings() {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Admin Settings", Description: "Platform configuration placeholders."},
+		"Platform Admin",
+		"Admin Settings",
+		"Platform configuration placeholders.",
+		adminSideNav("settings"),
+		Body("Admin Settings"),
+	)
+}
+
+templ Audit(data AuditListData) {
+	@layouts.DashboardSurface(
+		layouts.Meta{Title: "Admin Audit", Description: "Recent webhook and platform events."},
+		"Platform Admin",
+		"Admin Audit",
+		"Recent webhook and platform events.",
+		adminSideNav("audit"),
+		AuditBody(data),
+	)
+}
+
+templ DashboardBody(stats DashboardStats) {
+	<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+		<div class="rounded-md border border-border bg-card p-4"><div class="text-xs text-muted-foreground">Users</div><div class="text-xl font-semibold">{ stats.Users }</div></div>
+		<div class="rounded-md border border-border bg-card p-4"><div class="text-xs text-muted-foreground">Organizations</div><div class="text-xl font-semibold">{ stats.Organizations }</div></div>
+		<div class="rounded-md border border-border bg-card p-4"><div class="text-xs text-muted-foreground">Subscriptions</div><div class="text-xl font-semibold">{ stats.Subscriptions }</div></div>
+		<div class="rounded-md border border-border bg-card p-4"><div class="text-xs text-muted-foreground">Webhook Events</div><div class="text-xl font-semibold">{ stats.WebhookEvents }</div></div>
+	</div>
+}
+
+func adminSideNav(active string) []layouts.NavItem {
+	return []layouts.NavItem{
+		{Label: "Overview", Href: "/admin/", Active: active == "dashboard"},
+		{Label: "Users", Href: "/admin/users", Active: active == "users"},
+		{Label: "Organizations", Href: "/admin/organizations", Active: active == "organizations"},
+		{Label: "Analytics", Href: "/admin/analytics", Active: active == "analytics"},
+		{Label: "Audit", Href: "/admin/audit", Active: active == "audit"},
+		{Label: "Settings", Href: "/admin/settings", Active: active == "settings"},
+	}
+}
+
+templ UsersBody(data UserListData) {
+	@TableToolbar(data.Base, data.Pager)
+	<div class="overflow-x-auto rounded-md border border-border bg-card">
+		<table class="w-full text-left text-sm">
+			<thead class="bg-muted/30 text-muted-foreground">
+				<tr><th class="px-3 py-2">Email</th><th class="px-3 py-2">Name</th><th class="px-3 py-2">Verified</th><th class="px-3 py-2">Orgs</th><th class="px-3 py-2">Created</th></tr>
+			</thead>
+			<tbody>
+				for _, row := range data.Rows {
+					<tr class="border-t border-border"><td class="px-3 py-2">{ row.Email }</td><td class="px-3 py-2">{ row.Name }</td><td class="px-3 py-2">{ row.Verified }</td><td class="px-3 py-2">{ row.OrgCount }</td><td class="px-3 py-2 text-xs text-muted-foreground">{ row.CreatedAt }</td></tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	@TablePager(data.Base, data.Pager)
+}
+
+templ UserDetailBody(data UserDetailData) {
+	<div class="space-y-4 text-sm">
+		<div class="rounded-md border border-border bg-card p-4">
+			<div>Email: { data.Email }</div>
+			<div>Name: { data.Name }</div>
+			<div>Verified: { data.Verified }</div>
+			<div>Created: { data.CreatedAt }</div>
+		</div>
+		<div class="rounded-md border border-border bg-card p-4">
+			<div class="mb-2 font-medium">Memberships</div>
+			for _, m := range data.Organizations {
+				<div>{ m.OrgSlug } ({ m.OrgID }) - { m.Role }</div>
+			}
+		</div>
+	</div>
+}
+
+templ OrganizationsBody(data OrganizationListData) {
+	@TableToolbar(data.Base, data.Pager)
+	<div class="overflow-x-auto rounded-md border border-border bg-card">
+		<table class="w-full text-left text-sm">
+			<thead class="bg-muted/30 text-muted-foreground">
+				<tr><th class="px-3 py-2">Slug</th><th class="px-3 py-2">Name</th><th class="px-3 py-2">Members</th><th class="px-3 py-2">Invites</th><th class="px-3 py-2">Plan</th><th class="px-3 py-2">Status</th></tr>
+			</thead>
+			<tbody>
+				for _, row := range data.Rows {
+					<tr class="border-t border-border"><td class="px-3 py-2">{ row.Slug }</td><td class="px-3 py-2">{ row.Name }</td><td class="px-3 py-2">{ row.MemberCount }</td><td class="px-3 py-2">{ row.InvitationCount }</td><td class="px-3 py-2">{ row.Plan }</td><td class="px-3 py-2">{ row.SubscriptionStatus }</td></tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	@TablePager(data.Base, data.Pager)
+}
+
+templ OrganizationDetailBody(data OrganizationDetailData) {
+	<div class="rounded-md border border-border bg-card p-4 text-sm">
+		<div>ID: { data.ID }</div>
+		<div>Slug: { data.Slug }</div>
+		<div>Name: { data.Name }</div>
+		<div>Owner: { data.OwnerID }</div>
+		<div>Members: { data.MemberCount }</div>
+		<div>Invitations: { data.InvitationCount }</div>
+		<div>Plan: { data.Plan }</div>
+		<div>Subscription Status: { data.SubscriptionStatus }</div>
+	</div>
+}
+
+templ AnalyticsBody(rows []OrganizationRow) {
+	<div class="space-y-3">
+		for _, row := range rows {
+			<div class="rounded-md border border-border bg-card p-3 text-sm">
+				<div class="font-medium">{ row.Name } ({ row.Slug })</div>
+				<div class="text-muted-foreground">Plan: { row.Plan } | Status: { row.SubscriptionStatus } | Members: { row.MemberCount }</div>
+			</div>
+		}
+	</div>
+}
+
+templ AuditBody(data AuditListData) {
+	@TableToolbar(data.Base, data.Pager)
+	<div class="overflow-x-auto rounded-md border border-border bg-card">
+		<table class="w-full text-left text-sm">
+			<thead class="bg-muted/30 text-muted-foreground">
+				<tr><th class="px-3 py-2">Provider</th><th class="px-3 py-2">Event</th><th class="px-3 py-2">Family</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Occurred</th></tr>
+			</thead>
+			<tbody>
+				for _, row := range data.Rows {
+					<tr class="border-t border-border"><td class="px-3 py-2">{ row.Provider }</td><td class="px-3 py-2">{ row.EventType }</td><td class="px-3 py-2">{ row.Family }</td><td class="px-3 py-2">{ row.Status }</td><td class="px-3 py-2">{ row.OccurredAt }</td></tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	@TablePager(data.Base, data.Pager)
+}
+
+templ Body(title string) {
+	<div class="rounded-md border border-border bg-card p-4 text-sm text-muted-foreground">
+		TODO: implement system-admin data views for <span class="font-medium text-foreground">{ title }</span>.
+	</div>
+}
+
+templ TableToolbar(base string, pager PagerState) {
+	<form method="get" action={ base } class="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-card p-2">
+		<input type="search" name="q" value={ pager.Query } placeholder="Search..." class="min-w-[220px] flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2"/>
+		<input type="hidden" name="page" value="1"/>
+		<button type="submit" class="rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground">Apply</button>
+	</form>
+}
+
+templ TablePager(base string, pager PagerState) {
+	<div class="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+		<div>Page { pager.Page }</div>
+		<div class="flex items-center gap-2">
+			if pager.HasPrev {
+				<a href={ fmt.Sprintf("%s?page=%d&q=%s", base, pager.Page-1, url.QueryEscape(pager.Query)) } class="rounded-md border border-border px-2 py-1 hover:bg-muted/50">Previous</a>
+			} else {
+				<span class="rounded-md border border-border px-2 py-1 opacity-50">Previous</span>
+			}
+			if pager.HasNext {
+				<a href={ fmt.Sprintf("%s?page=%d&q=%s", base, pager.Page+1, url.QueryEscape(pager.Query)) } class="rounded-md border border-border px-2 py-1 hover:bg-muted/50">Next</a>
+			} else {
+				<span class="rounded-md border border-border px-2 py-1 opacity-50">Next</span>
+			}
+		</div>
+	</div>
+}

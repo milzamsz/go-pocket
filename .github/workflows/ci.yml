@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26.3"
+          cache: true
+
+      - name: Install templ CLI
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
+
+      - name: Install Task
+        run: go install github.com/go-task/task/v3/cmd/task@v3.49.1
+
+      - name: Download dependencies
+        run: task deps
+
+      - name: Generate templ code
+        run: |
+          task templ:generate
+          git diff --exit-code
+
+      - name: Lint
+        run: task lint
+
+      - name: Test
+        run: task test
+
+      - name: Build
+        run: task build
+

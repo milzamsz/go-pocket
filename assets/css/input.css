@@ -1,0 +1,199 @@
+@import "tailwindcss";
+@source "../../components/**/*.templ";
+@source "../../internal/server/**/*.go";
+
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--font-sans: "Inter", sans-serif;
+	--font-display: "Geist", sans-serif;
+	--radius: 0.5rem;
+	--sidebar-width: 16.25rem;
+	--container-max: 90rem;
+	--space-xs: 0.25rem;
+	--space-sm: 0.5rem;
+	--space-md: 1rem;
+	--space-lg: 1.5rem;
+	--space-xl: 2rem;
+
+	--color-background: #f5f7fb;
+	--color-foreground: #191c22;
+	--color-surface: #ffffff;
+	--color-surface-container-lowest: #ffffff;
+	--color-surface-container-low: #f3f4f9;
+	--color-surface-container: #eceef5;
+	--color-surface-container-high: #e6e8f0;
+	--color-surface-container-highest: #dde1eb;
+	--color-surface-variant: #d9dcef;
+	--color-on-surface: #191c22;
+	--color-on-surface-variant: #565d6c;
+	--color-primary: #4d5cff;
+	--color-primary-foreground: #f7f7ff;
+	--color-primary-container: #dfe2ff;
+	--color-accent: #0ca389;
+	--color-accent-foreground: #f2fffc;
+	--color-muted: #eceef5;
+	--color-muted-foreground: #5f6677;
+	--color-border: #cfd4e2;
+	--color-input: #c7cddd;
+	--color-card: #ffffff;
+	--color-card-foreground: #191c22;
+	--color-warning: #f28b5b;
+	--color-warning-foreground: #ffffff;
+	--color-success: #0ca389;
+	--color-success-foreground: #f2fffc;
+	--color-destructive: #b4222a;
+	--color-destructive-foreground: #fff1f1;
+}
+
+.dark {
+	--color-background: #131315;
+	--color-foreground: #e5e1e4;
+	--color-surface: #131315;
+	--color-surface-container-lowest: #0e0e10;
+	--color-surface-container-low: #1c1b1d;
+	--color-surface-container: #201f22;
+	--color-surface-container-high: #2a2a2c;
+	--color-surface-container-highest: #353437;
+	--color-surface-variant: #353437;
+	--color-on-surface: #e5e1e4;
+	--color-on-surface-variant: #c7c4d7;
+	--color-primary: #c0c1ff;
+	--color-primary-foreground: #1000a9;
+	--color-primary-container: #8083ff;
+	--color-accent: #44e2cd;
+	--color-accent-foreground: #003731;
+	--color-muted: #201f22;
+	--color-muted-foreground: #c7c4d7;
+	--color-border: #464554;
+	--color-input: #464554;
+	--color-card: #1c1b1d;
+	--color-card-foreground: #e5e1e4;
+	--color-warning: #ffb4ab;
+	--color-warning-foreground: #690005;
+	--color-success: #44e2cd;
+	--color-success-foreground: #003731;
+	--color-destructive: #93000a;
+	--color-destructive-foreground: #ffdad6;
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+		background-image: radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-primary) 10%, transparent), transparent 30%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 35%);
+	}
+
+	h1, h2, h3, h4 {
+		@apply tracking-normal;
+	}
+}
+
+@layer components {
+	.stitch-panel {
+		background: #ffffff;
+		border: 1px solid #d8deea;
+		box-shadow: 0 12px 30px rgb(15 23 42 / 0.06);
+	}
+
+	.dark .stitch-panel {
+		background: #111319;
+		border-color: #1b1f29;
+		box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
+	}
+
+	.stitch-panel-soft {
+		background: #f8fafc;
+		border: 1px solid #d8deea;
+	}
+
+	.dark .stitch-panel-soft {
+		background: #0d0f14;
+		border-color: #1b1f29;
+	}
+
+	.stitch-glass {
+		background: rgb(255 255 255 / 0.82);
+		border: 1px solid rgb(203 213 225 / 0.9);
+		backdrop-filter: blur(12px);
+	}
+
+	.dark .stitch-glass {
+		background: rgb(17 19 25 / 0.72);
+		border-color: #1b1f29;
+	}
+
+	.stitch-input {
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		color: #111827;
+	}
+
+	.dark .stitch-input {
+		background: #0d0f14;
+		border-color: #1b1f29;
+		color: #e5e1e4;
+	}
+
+	.stitch-input::placeholder {
+		color: #64748b;
+	}
+
+	.dark .stitch-input::placeholder {
+		color: #81899b;
+	}
+
+	.stitch-row:hover,
+	.stitch-hover:hover {
+		background: #eef2ff;
+	}
+
+	.dark .stitch-row:hover,
+	.dark .stitch-hover:hover {
+		background: rgb(24 27 36 / 0.5);
+	}
+
+	.stitch-table-head {
+		background: #f1f5f9;
+		border-bottom: 1px solid #d8deea;
+		color: #475569;
+	}
+
+	.dark .stitch-table-head {
+		background: #181b24;
+		border-bottom-color: #1b1f29;
+		color: #c7c4d7;
+	}
+
+	.stitch-divider {
+		border-color: #d8deea;
+	}
+
+	.dark .stitch-divider {
+		border-color: #1b1f29;
+	}
+
+	.stitch-button-secondary {
+		background: #ffffff;
+		border: 1px solid #cbd5e1;
+		color: #1f2937;
+	}
+
+	.stitch-button-secondary:hover {
+		background: #f1f5f9;
+	}
+
+	.dark .stitch-button-secondary {
+		background: #0d0f14;
+		border-color: #1b1f29;
+		color: #e5e1e4;
+	}
+
+	.dark .stitch-button-secondary:hover {
+		background: #181b24;
+	}
+}

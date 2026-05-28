@@ -1,0 +1,14 @@
+{
+  "type": "order.paid",
+  "data": {
+    "organization_id": "__ORG_ID__",
+    "status": "paid",
+    "amount_cents": 2599,
+    "invoice": {
+      "id": "inv_fixture_001"
+    },
+    "subscription": {
+      "id": "sub_fixture_order_001"
+    }
+  }
+}

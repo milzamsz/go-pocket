@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: go-pocket:local
+    ports:
+      - "8090:8090"
+    env_file:
+      - .env
+    volumes:
+      - pocketbase_data:/app/pb_data
+    restart: unless-stopped
+
+volumes:
+  pocketbase_data:
+

@@ -1,0 +1,309 @@
+package org
+
+import (
+	"fmt"
+	"github.com/milzamsz/go-pocket/components/layouts"
+	"github.com/milzamsz/go-pocket/internal/domain"
+)
+
+templ Products(slug string, rows []domain.Product, q string, category string, sort string, pageNumber, pageSize, total int) {
+	@page(slug, "Products", "Manage organization inventory, stock and pricing.", ProductsBody(slug, rows, q, category, sort, pageNumber, pageSize, total))
+}
+
+templ ProductsBody(slug string, rows []domain.Product, q string, category string, sort string, pageNumber, pageSize, total int) {
+	<div class="space-y-6" x-data="{ openNewModal: false, selectedIDs: [] }">
+		<!-- Page Header Controls -->
+		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+			<!-- Title & Counter -->
+			<div>
+				<h2 class="text-lg font-semibold text-foreground">Inventory Directory</h2>
+				<p class="text-xs text-muted-foreground">Displaying { fmt.Sprintf("%d", len(rows)) } of { fmt.Sprintf("%d", total) } products.</p>
+			</div>
+			<!-- New Product Button -->
+			<button @click="openNewModal = true" class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">
+				@layouts.Icon("plus", "-ml-1 mr-1.5 h-4.5 w-4.5")
+				New Product
+			</button>
+		</div>
+
+		<!-- New Product Modal -->
+		<div x-show="openNewModal" class="relative z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true" style="display: none;">
+			<div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+			<div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+				<div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+					<div @click.outside="openNewModal = false" class="relative transform overflow-hidden rounded-xl stitch-panel text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+						<form method="post" action={ "/org/" + slug + "/products" } class="space-y-4 p-6">
+							<div class="border-b border-slate-200 dark:border-[#1b1f29] pb-3">
+								<h3 class="font-display text-lg font-medium text-foreground">Add New Product</h3>
+								<p class="text-xs text-muted-foreground">Specify details of your product to register it.</p>
+							</div>
+							<div class="space-y-3">
+								<div>
+									<label class="block text-xs font-medium text-muted-foreground" for="prod-name">Product Name</label>
+									<input id="prod-name" name="name" type="text" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="e.g. Cyberpunk Widget" required />
+								</div>
+								<div>
+									<label class="block text-xs font-medium text-muted-foreground" for="prod-category">Category</label>
+									<select id="prod-category" name="category" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-foreground">
+										<option value="electronics">Electronics</option>
+										<option value="apparel">Apparel</option>
+										<option value="home">Home</option>
+										<option value="toys">Toys</option>
+									</select>
+								</div>
+								<div class="grid grid-cols-2 gap-3">
+									<div>
+										<label class="block text-xs font-medium text-muted-foreground" for="prod-price">Price (Cents)</label>
+										<input id="prod-price" name="price" type="number" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="12900 for $129.00" required />
+									</div>
+									<div>
+										<label class="block text-xs font-medium text-muted-foreground" for="prod-stock">Stock Level</label>
+										<input id="prod-stock" name="stock" type="number" class="mt-1 w-full rounded-lg stitch-panel-soft px-3 py-2 text-sm text-foreground outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="100" required />
+									</div>
+								</div>
+								<div class="flex items-center gap-2 pt-2">
+									<input id="prod-active" name="active" type="checkbox" checked class="h-4 w-4 rounded border-slate-200 dark:border-[#1b1f29] text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-[#0d0f14]" />
+									<label class="text-xs text-muted-foreground" for="prod-active">Active and visible in catalog</label>
+								</div>
+							</div>
+							<div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-200 dark:border-[#1b1f29]">
+								<button type="button" @click="openNewModal = false" class="rounded-lg border border-slate-200 dark:border-[#1b1f29] px-4 py-2 text-sm font-medium hover:bg-muted/50 text-foreground">Cancel</button>
+								<button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Save Product</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Filter Toolbar -->
+		<div class="rounded-xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-[#1b1f29] dark:bg-[#111319]/60">
+			<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+				<!-- Search and Category Facets -->
+				<div class="flex flex-1 flex-wrap items-center gap-3">
+					<!-- Search Box -->
+					<div class="relative w-full max-w-xs">
+						<input
+							type="text"
+							name="q"
+							value={ q }
+							placeholder="Search products..."
+							class="w-full rounded-lg stitch-input pl-9 pr-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+							hx-get={ "/org/" + slug + "/products" }
+							hx-trigger="input changed delay:300ms, search"
+							hx-target="#products-table-container"
+							hx-include="[name='category'],[name='sort']"
+							hx-push-url="true"
+						/>
+						<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
+							@layouts.Icon("search", "h-4.5 w-4.5")
+						</div>
+					</div>
+
+					<!-- Category Select -->
+					<select
+						name="category"
+						class="rounded-lg stitch-input px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+						hx-get={ "/org/" + slug + "/products" }
+						hx-trigger="change"
+						hx-target="#products-table-container"
+						hx-include="[name='q'],[name='sort']"
+						hx-push-url="true"
+					>
+						<option value="">All Categories</option>
+						<option value="electronics" selected={ category == "electronics" }>Electronics</option>
+						<option value="apparel" selected={ category == "apparel" }>Apparel</option>
+						<option value="home" selected={ category == "home" }>Home</option>
+						<option value="toys" selected={ category == "toys" }>Toys</option>
+					</select>
+				</div>
+
+				<!-- Bulk actions & Sorting -->
+				<div class="flex items-center gap-3 justify-end">
+					<!-- Bulk Delete Tool -->
+					<div x-show="selectedIDs.length > 0" class="flex items-center gap-2" style="display: none;">
+						<span class="text-xs text-muted-foreground" x-text="`${selectedIDs.length} selected`"></span>
+						<button
+							@click="if(confirm('Delete selected products?')) { htmx.ajax('POST', '/org/' + slug + '/products/bulk-delete', { values: { ids: selectedIDs }, target: '#products-table-container' }) }"
+							class="inline-flex items-center gap-1 rounded-lg bg-red-600/10 border border-red-600/30 px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-600/20"
+						>
+							Delete Selected
+						</button>
+					</div>
+
+					<!-- Sort Select -->
+					<select
+						name="sort"
+						class="rounded-lg stitch-input px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+						hx-get={ "/org/" + slug + "/products" }
+						hx-trigger="change"
+						hx-target="#products-table-container"
+						hx-include="[name='q'],[name='category']"
+						hx-push-url="true"
+					>
+						<option value="-created" selected={ sort == "-created" }>Newest First</option>
+						<option value="created" selected={ sort == "created" }>Oldest First</option>
+						<option value="name" selected={ sort == "name" }>Name A-Z</option>
+						<option value="-name" selected={ sort == "-name" }>Name Z-A</option>
+						<option value="price" selected={ sort == "price" }>Price Low-High</option>
+						<option value="-price" selected={ sort == "-price" }>Price High-Low</option>
+						<option value="stock" selected={ sort == "stock" }>Stock Low-High</option>
+						<option value="-stock" selected={ sort == "-stock" }>Stock High-Low</option>
+					</select>
+				</div>
+			</div>
+		</div>
+
+		<!-- Table Container -->
+		<div id="products-table-container" class="rounded-xl stitch-panel shadow-sm overflow-hidden" hx-get={ "/org/" + slug + "/products" } hx-trigger="refreshProducts from:body" hx-target="this" hx-include="[name='q'],[name='category'],[name='sort']">
+			@ProductsTableBody(slug, rows, q, category, sort, pageNumber, pageSize, total)
+		</div>
+	</div>
+}
+
+templ ProductsTableBody(slug string, rows []domain.Product, q string, category string, sort string, pageNumber, pageSize, total int) {
+	if len(rows) == 0 {
+		<div class="flex flex-col items-center justify-center p-12 text-center">
+			@layouts.Icon("package", "mb-3 h-12 w-12 text-muted-foreground/60")
+			<h3 class="text-sm font-semibold text-foreground">No Products Found</h3>
+			<p class="text-xs text-muted-foreground mt-1 max-w-xs">No products match your search filters, or you haven't added any products yet.</p>
+		</div>
+	} else {
+		<div class="overflow-x-auto">
+			<table class="min-w-full text-sm">
+				<thead class="bg-slate-100 dark:bg-[#181b24] text-left text-muted-foreground border-b border-slate-200 dark:border-[#1b1f29]">
+					<tr>
+						<th class="w-12 px-4 py-3">
+							<input
+								type="checkbox"
+								class="h-4 w-4 rounded border-slate-200 dark:border-[#1b1f29] text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-[#0d0f14]"
+								@change="if($el.checked) { selectedIDs = rows.map(r => r.id) } else { selectedIDs = [] }"
+								x-init="rows = []"
+							/>
+						</th>
+						<th class="font-display px-4 py-3 font-medium">Name</th>
+						<th class="font-display px-4 py-3 font-medium">Category</th>
+						<th class="font-display px-4 py-3 font-medium text-right">Price</th>
+						<th class="font-display px-4 py-3 font-medium text-right">Stock</th>
+						<th class="font-display px-4 py-3 font-medium">Status</th>
+						<th class="w-20 px-4 py-3 text-right"></th>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-slate-200 dark:divide-[#1b1f29]">
+					for _, item := range rows {
+						<tr class="hover:bg-slate-100 dark:hover:bg-[#181b24]/50 transition-colors" x-init={ fmt.Sprintf("rows.push({id: '%s'})", item.ID) }>
+							<td class="px-4 py-3">
+								<input
+									type="checkbox"
+									value={ item.ID }
+									x-model="selectedIDs"
+									class="h-4 w-4 rounded border-slate-200 dark:border-[#1b1f29] text-indigo-600 focus:ring-indigo-500 bg-slate-50 dark:bg-[#0d0f14]"
+								/>
+							</td>
+							<td class="px-4 py-3 font-medium text-foreground">
+								<a href={ "/org/" + slug + "/products/" + item.ID } class="hover:text-primary hover:underline">{ item.Name }</a>
+							</td>
+							<td class="px-4 py-3">
+								<span class="inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-400 capitalize">
+									{ item.Category }
+								</span>
+							</td>
+							<td class="px-4 py-3 text-right font-medium text-foreground">
+								{ fmt.Sprintf("$%.2f", float64(item.Price)/100.0) }
+							</td>
+							<td class="px-4 py-3 text-right">
+								<div class="flex flex-col items-end gap-1">
+									<span class="font-medium text-foreground">{ fmt.Sprintf("%d", item.Stock) }</span>
+									<div class="w-20 bg-slate-50 dark:bg-[#0d0f14] rounded-full h-1">
+										if item.Stock > 50 {
+											<div class="bg-emerald-500 h-1 rounded-full" style="width: 100%"></div>
+										} else if item.Stock > 10 {
+											<div class="bg-amber-500 h-1 rounded-full" style="width: 50%"></div>
+										} else if item.Stock > 0 {
+											<div class="bg-red-500 h-1 rounded-full" style="width: 15%"></div>
+										} else {
+											<div class="bg-slate-50 dark:bg-[#0d0f14] h-1 rounded-full" style="width: 0%"></div>
+										}
+									</div>
+								</div>
+							</td>
+							<td class="px-4 py-3">
+								if item.Active {
+									<span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">
+										Active
+									</span>
+								} else {
+									<span class="inline-flex items-center rounded-full bg-zinc-500/10 px-2 py-0.5 text-xs font-medium text-zinc-400">
+										Inactive
+									</span>
+								}
+							</td>
+							<td class="px-4 py-3 text-right">
+								<button
+									hx-delete={ "/org/" + slug + "/products/" + item.ID }
+									hx-target="#products-table-container"
+									hx-confirm="Are you sure you want to delete this product?"
+									class="font-display text-red-400 hover:text-red-300 font-medium text-xs bg-transparent border-0 cursor-pointer outline-none"
+								>
+									Delete
+								</button>
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+
+		<!-- Pagination Footer -->
+		<div class="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 dark:border-[#1b1f29] px-4 py-3.5 gap-4">
+			<div class="text-xs text-muted-foreground">
+				Showing <span class="font-medium text-foreground">{ fmt.Sprintf("%d", (pageNumber-1)*pageSize+1) }</span> to <span class="font-medium text-foreground">{ fmt.Sprintf("%d", min(pageNumber*pageSize, total)) }</span> of <span class="font-medium text-foreground">{ fmt.Sprintf("%d", total) }</span> records.
+			</div>
+			<div class="flex items-center gap-1.5">
+				<!-- Prev Button -->
+				if pageNumber > 1 {
+					<button
+						hx-get={ "/org/" + slug + "/products?page=" + fmt.Sprintf("%d", pageNumber-1) }
+						hx-include="[name='q'],[name='category'],[name='sort']"
+						hx-target="#products-table-container"
+						hx-push-url="true"
+						class="font-display inline-flex items-center justify-center rounded-lg stitch-panel px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-[#181b24] transition-colors text-foreground cursor-pointer"
+					>
+						Previous
+					</button>
+				} else {
+					<button class="font-display inline-flex items-center justify-center rounded-lg stitch-panel px-3 py-1.5 text-xs font-medium opacity-50 cursor-not-allowed text-muted-foreground" disabled>
+						Previous
+					</button>
+				}
+
+				<!-- Page Numbers -->
+				<span class="font-display text-xs text-muted-foreground px-2">Page { fmt.Sprintf("%d", pageNumber) }</span>
+
+				<!-- Next Button -->
+				if pageNumber*pageSize < total {
+					<button
+						hx-get={ "/org/" + slug + "/products?page=" + fmt.Sprintf("%d", pageNumber+1) }
+						hx-include="[name='q'],[name='category'],[name='sort']"
+						hx-target="#products-table-container"
+						hx-push-url="true"
+						class="font-display inline-flex items-center justify-center rounded-lg stitch-panel px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:hover:bg-[#181b24] transition-colors text-foreground cursor-pointer"
+					>
+						Next
+					</button>
+				} else {
+					<button class="font-display inline-flex items-center justify-center rounded-lg stitch-panel px-3 py-1.5 text-xs font-medium opacity-50 cursor-not-allowed text-muted-foreground" disabled>
+						Next
+					</button>
+				}
+			</div>
+		</div>
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

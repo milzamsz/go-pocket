@@ -1,0 +1,19 @@
+{
+  "type": "subscription.updated",
+  "data": {
+    "status": "active",
+    "customer": {
+      "id": "cus_fixture_001",
+      "external_id": "__ORG_SLUG__"
+    },
+    "subscription": {
+      "id": "sub_fixture_001"
+    },
+    "product": {
+      "id": "prod_fixture_001"
+    },
+    "price": {
+      "id": "price_fixture_001"
+    }
+  }
+}

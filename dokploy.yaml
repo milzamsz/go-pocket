@@ -1,0 +1,30 @@
+name: go-pocket
+type: docker
+
+build:
+  dockerfile: Dockerfile
+  context: .
+
+deploy:
+  replicas: 1
+  healthcheck:
+    path: /healthz
+    port: 8090
+    interval: 30s
+    timeout: 5s
+    retries: 5
+
+ports:
+  - containerPort: 8090
+    public: true
+
+volumes:
+  - name: pb-data
+    mountPath: /app/pb_data
+
+env:
+  - name: APP_ENV
+    value: production
+  - name: PORT
+    value: "8090"
+

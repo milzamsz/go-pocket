@@ -1,0 +1,114 @@
+package marketing
+
+import "github.com/milzamsz/go-pocket/components/layouts"
+
+type DocsNavItem struct {
+	Title string
+	Path  string
+}
+
+templ DocsIndex(items []DocsNavItem) {
+	@layouts.Surface(
+		layouts.Meta{Title: "Docs", Description: "go-pocket documentation"},
+		"Documentation",
+		"Guides and references for building with go-pocket.",
+		DocsIndexBody(items),
+	)
+}
+
+templ DocsIndexBody(items []DocsNavItem) {
+	<div class="grid gap-6 lg:grid-cols-[18rem_1fr]">
+		<aside class="rounded-xl stitch-panel p-4">
+			<div class="rounded-lg stitch-panel-soft p-3">
+				<div class="relative">
+					<input type="search" placeholder="Search docs..." class="w-full rounded-lg stitch-input py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"/>
+					<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">@layouts.Icon("search", "h-4 w-4")</div>
+				</div>
+			</div>
+			<nav class="mt-4 space-y-1">
+				for _, item := range displayDocsItems(items) {
+					<a href={ "/docs/" + item.Path } class="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-slate-100 hover:text-foreground dark:hover:bg-[#181b24]">
+						@layouts.Icon("filetext", "h-4 w-4 text-indigo-500")
+						<span>{ item.Title }</span>
+					</a>
+				}
+			</nav>
+		</aside>
+		<section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+			for _, item := range displayDocsItems(items) {
+				<a href={ "/docs/" + item.Path } class="rounded-xl stitch-panel p-4 text-sm hover:bg-slate-100 dark:hover:bg-[#181b24]">
+					<div class="flex items-center gap-2 font-medium">
+						@layouts.Icon("filetext", "h-4 w-4 text-primary")
+						<span>{ item.Title }</span>
+					</div>
+					<div class="mt-2 text-xs leading-5 text-muted-foreground">Implementation reference at { "/docs/" + item.Path }</div>
+				</a>
+			}
+		</section>
+	</div>
+}
+
+func displayDocsItems(items []DocsNavItem) []DocsNavItem {
+	if len(items) > 0 {
+		return items
+	}
+	return []DocsNavItem{
+		{Title: "Getting Started", Path: "getting-started"},
+		{Title: "Architecture", Path: "architecture"},
+		{Title: "Polar Billing", Path: "billing/polar"},
+		{Title: "Dokploy Deployment", Path: "deployment/dokploy"},
+		{Title: "Authentication Flows", Path: "auth"},
+		{Title: "Organization Workspaces", Path: "organizations"},
+	}
+}
+
+templ DocsPage(title string, description string, htmlContent string) {
+	@layouts.Surface(
+		layouts.Meta{Title: title, Description: description},
+		title,
+		description,
+		templ.Raw(htmlContent),
+	)
+}
+
+templ HelpCenter() {
+	@layouts.Surface(
+		layouts.Meta{Title: "Help Center", Description: "Support and troubleshooting"},
+		"Help Center",
+		"Support guides and troubleshooting resources.",
+		HelpCenterBody(),
+	)
+}
+
+templ HelpCenterBody() {
+	<div class="space-y-6">
+		<section class="rounded-xl stitch-panel p-5">
+			<div class="relative">
+				<input type="search" placeholder="Search support topics, billing, auth, webhooks..." class="w-full rounded-lg stitch-input py-3 pl-11 pr-4 text-sm outline-none focus:ring-2 focus:ring-primary/20"/>
+				<div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-muted-foreground">@layouts.Icon("search", "h-4.5 w-4.5")</div>
+			</div>
+		</section>
+		<section class="grid gap-4 md:grid-cols-2">
+			<div class="rounded-xl stitch-panel p-5">
+				<div class="mb-3 inline-flex rounded-md bg-indigo-500/10 p-2 text-indigo-500">@layouts.Icon("arrow-right", "h-4 w-4")</div>
+				<h3 class="font-display text-base font-semibold text-card-foreground">Getting Started</h3>
+				<p class="mt-2 text-sm text-muted-foreground">Account setup, organization onboarding, and first deploy checklist.</p>
+			</div>
+			<div class="rounded-xl stitch-panel p-5">
+				<div class="mb-3 inline-flex rounded-md bg-indigo-500/10 p-2 text-indigo-500">@layouts.Icon("shield", "h-4 w-4")</div>
+				<h3 class="font-display text-base font-semibold text-card-foreground">Auth & Access</h3>
+				<p class="mt-2 text-sm text-muted-foreground">SSO options, password reset flows, and permission troubleshooting.</p>
+			</div>
+			<div class="rounded-xl stitch-panel p-5">
+				<div class="mb-3 inline-flex rounded-md bg-indigo-500/10 p-2 text-indigo-500">@layouts.Icon("credit-card", "h-4 w-4")</div>
+				<h3 class="font-display text-base font-semibold text-card-foreground">Billing Support</h3>
+				<p class="mt-2 text-sm text-muted-foreground">Subscription lifecycle, invoice questions, and checkout diagnostics.</p>
+			</div>
+			<div class="rounded-xl stitch-panel p-5">
+				<div class="mb-3 inline-flex rounded-md bg-indigo-500/10 p-2 text-indigo-500">@layouts.Icon("circle-alert", "h-4 w-4")</div>
+				<h3 class="font-display text-base font-semibold text-card-foreground">System Health</h3>
+				<p class="mt-2 text-sm text-muted-foreground">Webhooks, activity logs, and service status verification pointers.</p>
+			</div>
+		</section>
+	</div>
+}
