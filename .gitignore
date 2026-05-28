@@ -31,3 +31,6 @@ Thumbs.db
 # Coverage / reports
 coverage.out
 *.coverprofile
+
+# Planning docs (local only)
+*PLAN.md
