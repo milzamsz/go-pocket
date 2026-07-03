@@ -30,15 +30,16 @@ type Service interface {
 }
 
 type service struct {
-	client   EmailClient
-	from     string
-	baseURL  string
-	verifier WebhookVerifier
-	secret   string
-	store    webhookEventStore
-	storeMu  sync.RWMutex
-	mu       sync.Mutex
-	effects  webhookSideEffects
+	client     EmailClient
+	from       string
+	baseURL    string
+	verifier   WebhookVerifier
+	secret     string
+	production bool
+	store      webhookEventStore
+	storeMu    sync.RWMutex
+	mu         sync.Mutex
+	effects    webhookSideEffects
 }
 
 const (
@@ -70,12 +71,13 @@ func newServiceWithDependencies(cfg config.Config, client EmailClient, verifier 
 		store = noopWebhookEventStore{}
 	}
 	return &service{
-		client:   client,
-		from:     cfg.Resend.From,
-		baseURL:  cfg.BaseURL,
-		verifier: verifier,
-		secret:   cfg.Resend.WebhookSecret,
-		store:    store,
+		client:     client,
+		from:       cfg.Resend.From,
+		baseURL:    cfg.BaseURL,
+		verifier:   verifier,
+		secret:     cfg.Resend.WebhookSecret,
+		production: cfg.IsProduction(),
+		store:      store,
 	}
 }
 
@@ -229,6 +231,10 @@ func (s *service) buildTemplateRequest(templateID string, eventName string, subj
 }
 
 func (s *service) VerifyAndDispatchWebhook(ctx context.Context, headers http.Header, payload []byte) error {
+	if strings.TrimSpace(s.secret) == "" && s.production {
+		// Fail closed: never accept unsigned webhooks in production.
+		return fmt.Errorf("verify resend webhook: %w", ErrInvalidWebhookSignature)
+	}
 	if err := s.verifier.Verify(headers, payload, s.secret); err != nil {
 		return fmt.Errorf("verify resend webhook: %w", err)
 	}

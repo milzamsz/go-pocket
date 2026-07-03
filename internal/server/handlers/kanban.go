@@ -9,14 +9,19 @@ import (
 	"github.com/milzamsz/go-pocket/internal/domain"
 	"github.com/milzamsz/go-pocket/internal/server/middleware"
 	"github.com/milzamsz/go-pocket/internal/services/kanban"
+	"github.com/milzamsz/go-pocket/internal/services/tenancy"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func ShowKanbanBoard(kanbanSvc kanban.Service) func(e *core.RequestEvent) error {
+func ShowKanbanBoard(kanbanSvc kanban.Service, tenancySvc tenancy.Service) func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
 		orgCtx, ok := middleware.GetOrgContext(e)
 		if !ok {
 			return e.ForbiddenError("organization context missing", domain.ErrForbidden)
+		}
+		shell, err := orgShellState(e, tenancySvc)
+		if err != nil {
+			return e.ForbiddenError("failed to resolve shell state", err)
 		}
 
 		cols, cards, err := kanbanSvc.GetBoard(e.Request.Context(), orgCtx.OrgID)
@@ -24,7 +29,7 @@ func ShowKanbanBoard(kanbanSvc kanban.Service) func(e *core.RequestEvent) error 
 			return e.BadRequestError("failed to load kanban board", err)
 		}
 
-		return renderHTML(e, http.StatusOK, orgpage.Kanban(orgCtx.Slug, cols, cards))
+		return renderHTML(e, http.StatusOK, orgpage.Kanban(shell, orgCtx.Slug, cols, cards))
 	}
 }
 

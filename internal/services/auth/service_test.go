@@ -49,10 +49,12 @@ func TestRequestPasswordReset_CreatesTokenAndSendsEmail(t *testing.T) {
 	record, err := app.FindFirstRecordByFilter(
 		"auth_tokens",
 		"token = {:token} && kind = {:kind}",
-		dbx.Params{"token": "reset_abcDEF12", "kind": authTokenKindReset},
+		dbx.Params{"token": hashAuthToken("reset_abcDEF12"), "kind": authTokenKindReset},
 	)
 	require.NoError(t, err)
 	require.Equal(t, "user@example.com", record.GetString("email"))
+	// The raw token must never be persisted; only its hash is stored at rest.
+	require.NotEqual(t, "reset_abcDEF12", record.GetString("token"))
 }
 
 func TestSignup_CreatesVerificationTokenAndSendsEmail(t *testing.T) {
@@ -225,12 +227,99 @@ func TestVerifyEmail_FailsWithConsumedToken(t *testing.T) {
 	require.EqualError(t, err, "invalid verification token")
 }
 
+func TestUpdateProfile_PersistsNameAndEmail(t *testing.T) {
+	t.Parallel()
+
+	app := testutil.NewTestApp(t)
+	user := seedAuthUser(t, app, "user@example.com", "secret123")
+	svc := NewWithDependencies(app, nil, nil, nil)
+
+	err := svc.UpdateProfile(context.Background(), user.Id, "  Renamed User  ", "New@Example.com")
+	require.NoError(t, err)
+
+	updated, err := app.FindRecordById("users", user.Id)
+	require.NoError(t, err)
+	require.Equal(t, "Renamed User", updated.GetString("name"))
+	require.Equal(t, "new@example.com", updated.Email())
+}
+
+func TestUpdateProfile_RequiresNameAndEmail(t *testing.T) {
+	t.Parallel()
+
+	app := testutil.NewTestApp(t)
+	user := seedAuthUser(t, app, "user@example.com", "secret123")
+	svc := NewWithDependencies(app, nil, nil, nil)
+
+	err := svc.UpdateProfile(context.Background(), user.Id, "   ", "")
+	require.EqualError(t, err, "name and email are required")
+}
+
+func TestChangePassword_UpdatesPasswordWhenCurrentMatches(t *testing.T) {
+	t.Parallel()
+
+	app := testutil.NewTestApp(t)
+	user := seedAuthUser(t, app, "user@example.com", "oldsecret")
+	svc := NewWithDependencies(app, nil, nil, nil)
+
+	err := svc.ChangePassword(context.Background(), user.Id, "oldsecret", "newsecret1", "newsecret1")
+	require.NoError(t, err)
+
+	updated, err := app.FindRecordById("users", user.Id)
+	require.NoError(t, err)
+	require.True(t, updated.ValidatePassword("newsecret1"))
+	require.False(t, updated.ValidatePassword("oldsecret"))
+}
+
+func TestChangePassword_RejectsIncorrectCurrentPassword(t *testing.T) {
+	t.Parallel()
+
+	app := testutil.NewTestApp(t)
+	user := seedAuthUser(t, app, "user@example.com", "oldsecret")
+	svc := NewWithDependencies(app, nil, nil, nil)
+
+	err := svc.ChangePassword(context.Background(), user.Id, "wrongsecret", "newsecret1", "newsecret1")
+	require.ErrorIs(t, err, ErrIncorrectPassword)
+
+	updated, err := app.FindRecordById("users", user.Id)
+	require.NoError(t, err)
+	require.True(t, updated.ValidatePassword("oldsecret"))
+}
+
+func TestChangePassword_RejectsMismatchedConfirmation(t *testing.T) {
+	t.Parallel()
+
+	app := testutil.NewTestApp(t)
+	user := seedAuthUser(t, app, "user@example.com", "oldsecret")
+	svc := NewWithDependencies(app, nil, nil, nil)
+
+	err := svc.ChangePassword(context.Background(), user.Id, "oldsecret", "newsecret1", "different")
+	require.EqualError(t, err, "password confirmation does not match")
+}
+
+func TestUpdateTwoFactor_PersistsEnabledFlag(t *testing.T) {
+	t.Parallel()
+
+	app := testutil.NewTestApp(t)
+	user := seedAuthUser(t, app, "user@example.com", "secret123")
+	svc := NewWithDependencies(app, nil, nil, nil)
+
+	require.NoError(t, svc.UpdateTwoFactor(context.Background(), user.Id, true))
+	updated, err := app.FindRecordById("users", user.Id)
+	require.NoError(t, err)
+	require.True(t, updated.GetBool("two_factor_enabled"))
+
+	require.NoError(t, svc.UpdateTwoFactor(context.Background(), user.Id, false))
+	updated, err = app.FindRecordById("users", user.Id)
+	require.NoError(t, err)
+	require.False(t, updated.GetBool("two_factor_enabled"))
+}
+
 func findAuthToken(t *testing.T, app core.App, token string, kind string) *core.Record {
 	t.Helper()
 	record, err := app.FindFirstRecordByFilter(
 		"auth_tokens",
 		"token = {:token} && kind = {:kind}",
-		dbx.Params{"token": token, "kind": kind},
+		dbx.Params{"token": hashAuthToken(token), "kind": kind},
 	)
 	require.NoError(t, err)
 	return record
@@ -242,7 +331,7 @@ func seedAuthToken(t *testing.T, app core.App, token string, kind string, email 
 	require.NoError(t, err)
 
 	record := core.NewRecord(collection)
-	record.Set("token", token)
+	record.Set("token", hashAuthToken(token))
 	record.Set("kind", kind)
 	record.Set("email", email)
 	record.Set("expires_at", expiresAt.UTC())

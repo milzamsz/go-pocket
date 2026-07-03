@@ -13,6 +13,7 @@ type Repository interface {
 	CreateMembership(ctx context.Context, membership domain.OrganizationMember) (domain.OrganizationMember, error)
 	ListMembersByOrg(ctx context.Context, orgID string) ([]domain.OrganizationMember, error)
 	FindMemberProfile(ctx context.Context, orgID string, userID string) (domain.OrganizationMemberProfile, error)
+	GetOrganizationShell(ctx context.Context, orgID string) (OrganizationShell, error)
 	InviteMember(ctx context.Context, orgID string, email string, role domain.OrgRole) (domain.Invitation, error)
 	RemoveMember(ctx context.Context, orgID string, userID string) error
 	ChangeMemberRole(ctx context.Context, orgID string, userID string, role domain.OrgRole) error
@@ -30,6 +31,7 @@ type Service interface {
 	CreateOrganization(ctx context.Context, org domain.Organization, ownerUserID string) (domain.Organization, error)
 	ListMembers(ctx context.Context, orgID string, actorRole domain.OrgRole) ([]domain.OrganizationMember, error)
 	GetMemberProfile(ctx context.Context, orgID string, actorRole domain.OrgRole, userID string) (domain.OrganizationMemberProfile, error)
+	GetOrganizationShell(ctx context.Context, orgID string, actorRole domain.OrgRole) (OrganizationShell, error)
 	InviteMember(ctx context.Context, orgID string, actorRole domain.OrgRole, email string, role domain.OrgRole) (domain.Invitation, error)
 	RemoveMember(ctx context.Context, orgID string, actorRole domain.OrgRole, userID string) error
 	ChangeMemberRole(ctx context.Context, orgID string, actorRole domain.OrgRole, userID string, role domain.OrgRole) error
@@ -44,6 +46,12 @@ type Service interface {
 
 type service struct {
 	repo Repository
+}
+
+type OrganizationShell struct {
+	Name               string
+	Plan               string
+	SubscriptionStatus string
 }
 
 func New(repo Repository) Service {
@@ -95,6 +103,20 @@ func (s *service) GetMemberProfile(ctx context.Context, orgID string, actorRole 
 		return domain.OrganizationMemberProfile{}, fmt.Errorf("find member profile: %w", err)
 	}
 	return profile, nil
+}
+
+func (s *service) GetOrganizationShell(ctx context.Context, orgID string, actorRole domain.OrgRole) (OrganizationShell, error) {
+	if orgID == "" {
+		return OrganizationShell{}, errors.New("orgID is required")
+	}
+	if !Can(actorRole, PermissionMembersRead) {
+		return OrganizationShell{}, domain.ErrForbidden
+	}
+	shell, err := s.repo.GetOrganizationShell(ctx, orgID)
+	if err != nil {
+		return OrganizationShell{}, fmt.Errorf("get organization shell: %w", err)
+	}
+	return shell, nil
 }
 
 func (s *service) InviteMember(ctx context.Context, orgID string, actorRole domain.OrgRole, email string, role domain.OrgRole) (domain.Invitation, error) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -93,13 +93,16 @@ func TestVerifyAndDispatchWebhook_InvalidSignature(t *testing.T) {
 func TestVerifyAndDispatchWebhook_ValidPolarSignature(t *testing.T) {
 	t.Parallel()
 
-	secret := "polar-secret"
+	secret := "whsec_bXktdGVzdC1zZWNyZXQ="
 	payload := []byte(`{"type":"order.paid"}`)
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
-	sig := signPolarPayloadForTest(secret, timestamp, payload)
+	id := "evt_polar_001"
+	sig := signStandardWebhookForTest(secret, id, timestamp, payload)
 
 	headers := http.Header{}
-	headers.Set("Polar-Signature", fmt.Sprintf("t=%s,v1=%s", timestamp, sig))
+	headers.Set("webhook-id", id)
+	headers.Set("webhook-timestamp", timestamp)
+	headers.Set("webhook-signature", "v1,"+sig)
 
 	svc := NewWithDependencies(config.Config{
 		Polar: config.PolarConfig{WebhookSecret: secret},
@@ -112,12 +115,14 @@ func TestVerifyAndDispatchWebhook_ValidPolarSignature(t *testing.T) {
 func TestVerifyAndDispatchWebhook_InvalidPolarSignature(t *testing.T) {
 	t.Parallel()
 
-	secret := "polar-secret"
+	secret := "whsec_bXktdGVzdC1zZWNyZXQ="
 	payload := []byte(`{"type":"order.paid"}`)
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
 	headers := http.Header{}
-	headers.Set("Polar-Signature", fmt.Sprintf("t=%s,v1=%s", timestamp, "invalid"))
+	headers.Set("webhook-id", "evt_polar_001")
+	headers.Set("webhook-timestamp", timestamp)
+	headers.Set("webhook-signature", "v1,invalid")
 
 	svc := NewWithDependencies(config.Config{
 		Polar: config.PolarConfig{WebhookSecret: secret},
@@ -134,6 +139,15 @@ func TestVerifyAndDispatchWebhook_NoSecretSkipsVerification(t *testing.T) {
 	svc := NewWithDependencies(config.Config{}, nil, nil)
 	err := svc.VerifyAndDispatchWebhook(context.Background(), http.Header{}, []byte("{}"))
 	require.NoError(t, err)
+}
+
+func TestVerifyAndDispatchWebhook_ProductionRequiresSecret(t *testing.T) {
+	t.Parallel()
+
+	svc := NewWithDependencies(config.Config{AppEnv: "production"}, nil, nil)
+	err := svc.VerifyAndDispatchWebhook(context.Background(), http.Header{}, []byte("{}"))
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrInvalidWebhookSignature)
 }
 
 func TestDispatchWebhookEvent_KnownBillingFamily(t *testing.T) {
@@ -445,9 +459,13 @@ func createSubscriptionRecord(t *testing.T, app core.App, orgID string, provider
 	return record
 }
 
-func signPolarPayloadForTest(secret, timestamp string, payload []byte) string {
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(timestamp + "."))
-	_, _ = mac.Write(payload)
-	return hex.EncodeToString(mac.Sum(nil))
+func signStandardWebhookForTest(secret, id, timestamp string, payload []byte) string {
+	decodedSecret, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(secret, "whsec_"))
+	if err != nil {
+		return ""
+	}
+	content := fmt.Sprintf("%s.%s.%s", id, timestamp, payload)
+	mac := hmac.New(sha256.New, decodedSecret)
+	_, _ = mac.Write([]byte(content))
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }

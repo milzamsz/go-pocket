@@ -13,11 +13,15 @@ import (
 
 func AdminDashboard() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		users := countRecords(e, "users")
 		orgs := countRecords(e, "organizations")
 		subs := countRecords(e, "subscriptions")
 		events := countRecords(e, "webhook_events")
-		return renderHTML(e, http.StatusOK, adminpage.Dashboard(adminpage.DashboardStats{
+		return renderHTML(e, http.StatusOK, adminpage.Dashboard(shell, adminpage.DashboardStats{
 			Users:         users,
 			Organizations: orgs,
 			Subscriptions: subs,
@@ -28,6 +32,10 @@ func AdminDashboard() func(e *core.RequestEvent) error {
 
 func AdminUsers() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		pager := parseAdminPager(e, 20)
 		filter := ""
 		params := dbx.Params{}
@@ -54,7 +62,7 @@ func AdminUsers() func(e *core.RequestEvent) error {
 				OrgCount:  int(orgCount),
 			})
 		}
-		return renderHTML(e, http.StatusOK, adminpage.Users(adminpage.UserListData{
+		return renderHTML(e, http.StatusOK, adminpage.Users(shell, adminpage.UserListData{
 			Rows:   rows,
 			Pager:  pager,
 			Base:   "/admin/users",
@@ -66,6 +74,10 @@ func AdminUsers() func(e *core.RequestEvent) error {
 
 func AdminUserDetail() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		id := strings.TrimSpace(e.Request.PathValue("id"))
 		record, err := e.App.FindRecordById("users", id)
 		if err != nil {
@@ -84,7 +96,7 @@ func AdminUserDetail() func(e *core.RequestEvent) error {
 				Role:    m.GetString("role"),
 			})
 		}
-		return renderHTML(e, http.StatusOK, adminpage.UserDetail(adminpage.UserDetailData{
+		return renderHTML(e, http.StatusOK, adminpage.UserDetail(shell, adminpage.UserDetailData{
 			ID:            record.Id,
 			Email:         record.Email(),
 			Name:          record.GetString("name"),
@@ -97,13 +109,17 @@ func AdminUserDetail() func(e *core.RequestEvent) error {
 
 func AdminOrganizations() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		pager := parseAdminPager(e, 20)
 		rows, hasNext, err := adminOrganizationRows(e.App, pager)
 		if err != nil {
 			return e.InternalServerError("failed to list organizations", err)
 		}
 		pager.HasNext = hasNext
-		return renderHTML(e, http.StatusOK, adminpage.Organizations(adminpage.OrganizationListData{
+		return renderHTML(e, http.StatusOK, adminpage.Organizations(shell, adminpage.OrganizationListData{
 			Rows:  rows,
 			Pager: pager,
 			Base:  "/admin/organizations",
@@ -113,6 +129,10 @@ func AdminOrganizations() func(e *core.RequestEvent) error {
 
 func AdminOrganizationDetail() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		id := strings.TrimSpace(e.Request.PathValue("id"))
 		org, err := e.App.FindRecordById("organizations", id)
 		if err != nil {
@@ -121,7 +141,7 @@ func AdminOrganizationDetail() func(e *core.RequestEvent) error {
 		memberCount, _ := e.App.CountRecords("organization_members", dbx.HashExp{"organization": id})
 		inviteCount, _ := e.App.CountRecords("invitations", dbx.HashExp{"organization": id})
 
-		return renderHTML(e, http.StatusOK, adminpage.OrganizationDetail(adminpage.OrganizationDetailData{
+		return renderHTML(e, http.StatusOK, adminpage.OrganizationDetail(shell, adminpage.OrganizationDetailData{
 			ID:                 org.Id,
 			Slug:               org.GetString("slug"),
 			Name:               org.GetString("name"),
@@ -136,17 +156,25 @@ func AdminOrganizationDetail() func(e *core.RequestEvent) error {
 
 func AdminAnalytics() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		pager := parseAdminPager(e, 20)
 		rows, _, err := adminOrganizationRows(e.App, pager)
 		if err != nil {
 			return e.InternalServerError("failed to load analytics", err)
 		}
-		return renderHTML(e, http.StatusOK, adminpage.Analytics(rows))
+		return renderHTML(e, http.StatusOK, adminpage.Analytics(shell, rows))
 	}
 }
 
 func AdminAudit() func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
 		pager := parseAdminPager(e, 20)
 		filter := ""
 		params := dbx.Params{}
@@ -174,11 +202,21 @@ func AdminAudit() func(e *core.RequestEvent) error {
 				OccurredAt: toRFC3339(occurred),
 			})
 		}
-		return renderHTML(e, http.StatusOK, adminpage.Audit(adminpage.AuditListData{
+		return renderHTML(e, http.StatusOK, adminpage.Audit(shell, adminpage.AuditListData{
 			Rows:  rows,
 			Pager: pager,
 			Base:  "/admin/audit",
 		}))
+	}
+}
+
+func AdminSettings() func(e *core.RequestEvent) error {
+	return func(e *core.RequestEvent) error {
+		shell, err := adminShellState(e)
+		if err != nil {
+			return e.UnauthorizedError("authentication required", err)
+		}
+		return renderHTML(e, http.StatusOK, adminpage.Settings(shell))
 	}
 }
 

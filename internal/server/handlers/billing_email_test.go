@@ -12,6 +12,7 @@ import (
 	"github.com/milzamsz/go-pocket/internal/services/auth"
 	"github.com/milzamsz/go-pocket/internal/services/billing"
 	"github.com/milzamsz/go-pocket/internal/services/email"
+	"github.com/milzamsz/go-pocket/internal/services/tenancy"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
 	"github.com/stretchr/testify/require"
@@ -105,6 +106,9 @@ func (m *mockTenancyService) ListMembers(context.Context, string, domain.OrgRole
 }
 func (m *mockTenancyService) GetMemberProfile(context.Context, string, domain.OrgRole, string) (domain.OrganizationMemberProfile, error) {
 	return domain.OrganizationMemberProfile{}, nil
+}
+func (m *mockTenancyService) GetOrganizationShell(context.Context, string, domain.OrgRole) (tenancy.OrganizationShell, error) {
+	return tenancy.OrganizationShell{}, nil
 }
 func (m *mockTenancyService) InviteMember(_ context.Context, orgID string, _ domain.OrgRole, _ string, role domain.OrgRole) (domain.Invitation, error) {
 	m.inviteOrgID = orgID

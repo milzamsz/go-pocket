@@ -23,10 +23,10 @@ func TestCleanupExpiredOrConsumedTokens_RemovesOnlyStaleTokens(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, deleted)
 
-	_, err = app.FindFirstRecordByFilter("auth_tokens", "token = {:token}", dbx.Params{"token": "reset_expiredToken"})
+	_, err = app.FindFirstRecordByFilter("auth_tokens", "token = {:token}", dbx.Params{"token": hashAuthToken("reset_expiredToken")})
 	require.Error(t, err)
 
-	_, err = app.FindFirstRecordByFilter("auth_tokens", "token = {:token}", dbx.Params{"token": "verify_consumedToken"})
+	_, err = app.FindFirstRecordByFilter("auth_tokens", "token = {:token}", dbx.Params{"token": hashAuthToken("verify_consumedToken")})
 	require.Error(t, err)
 
 	active := findAuthToken(t, app, "reset_activeToken", authTokenKindReset)

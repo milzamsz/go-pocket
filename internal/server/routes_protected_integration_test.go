@@ -155,11 +155,11 @@ func newRouteTestServer(t *testing.T) (core.App, http.Handler) {
 	}
 
 	deps := &Deps{
-		Config:  config.Config{},
-		Auth:    auth.New(app),
-		Billing: billing.New(config.Config{}),
-		Email:   email.New(config.Config{}),
-		Tenancy: tenancy.New(tenancy.NewPocketBaseRepository(app)),
+		Config:   config.Config{},
+		Auth:     auth.New(app),
+		Billing:  billing.New(config.Config{}),
+		Email:    email.New(config.Config{}),
+		Tenancy:  tenancy.New(tenancy.NewPocketBaseRepository(app)),
 		Products: products.New(app),
 		Kanban:   kanban.New(app),
 	}

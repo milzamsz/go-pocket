@@ -9,14 +9,19 @@ import (
 	"github.com/milzamsz/go-pocket/internal/domain"
 	"github.com/milzamsz/go-pocket/internal/server/middleware"
 	"github.com/milzamsz/go-pocket/internal/services/products"
+	"github.com/milzamsz/go-pocket/internal/services/tenancy"
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func ListProducts(productsSvc products.Service) func(e *core.RequestEvent) error {
+func ListProducts(productsSvc products.Service, tenancySvc tenancy.Service) func(e *core.RequestEvent) error {
 	return func(e *core.RequestEvent) error {
 		orgCtx, ok := middleware.GetOrgContext(e)
 		if !ok {
 			return e.ForbiddenError("organization context missing", domain.ErrForbidden)
+		}
+		shell, err := orgShellState(e, tenancySvc)
+		if err != nil {
+			return e.ForbiddenError("failed to resolve shell state", err)
 		}
 
 		q := strings.TrimSpace(e.Request.URL.Query().Get("q"))
@@ -57,7 +62,7 @@ func ListProducts(productsSvc products.Service) func(e *core.RequestEvent) error
 			return renderHTML(e, http.StatusOK, orgpage.ProductsTableBody(orgCtx.Slug, rows, q, category, sort, page, pageSize, total))
 		}
 
-		return renderHTML(e, http.StatusOK, orgpage.Products(orgCtx.Slug, rows, q, category, sort, page, pageSize, total))
+		return renderHTML(e, http.StatusOK, orgpage.Products(shell, orgCtx.Slug, rows, q, category, sort, page, pageSize, total))
 	}
 }
 

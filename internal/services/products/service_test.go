@@ -16,8 +16,6 @@ func TestProductService_CRUD_And_Tenancy(t *testing.T) {
 	svc := New(app)
 	ctx := context.Background()
 
-
-
 	// Create test users first to satisfy organization owner constraint
 	usersColl, err := app.FindCollectionByNameOrId("users")
 	require.NoError(t, err)

@@ -35,12 +35,19 @@ func Bootstrap(pb *pocketbase.PocketBase) error {
 
 	pb.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		warnIfCSSMissing(se.App)
+		logConfigWarnings(se.App, cfg)
 		runAuthTokenCleanupScheduler(se.App)
 		server.RegisterRoutes(se, deps)
 		return se.Next()
 	})
 
 	return nil
+}
+
+func logConfigWarnings(app core.App, cfg config.Config) {
+	for _, warning := range cfg.Validate() {
+		app.Logger().Warn("configuration warning", "detail", warning)
+	}
 }
 
 func warnIfCSSMissing(app core.App) {

@@ -130,6 +130,18 @@ func (r *PocketBaseRepository) FindMemberProfile(_ context.Context, orgID string
 	}, nil
 }
 
+func (r *PocketBaseRepository) GetOrganizationShell(_ context.Context, orgID string) (OrganizationShell, error) {
+	record, err := r.findOrganizationByID(orgID)
+	if err != nil {
+		return OrganizationShell{}, err
+	}
+	return OrganizationShell{
+		Name:               record.GetString("name"),
+		Plan:               record.GetString("plan"),
+		SubscriptionStatus: record.GetString("subscription_status"),
+	}, nil
+}
+
 func (r *PocketBaseRepository) InviteMember(_ context.Context, orgID string, email string, role domain.OrgRole) (domain.Invitation, error) {
 	collection, err := r.app.FindCollectionByNameOrId("invitations")
 	if err != nil {

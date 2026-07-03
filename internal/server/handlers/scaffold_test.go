@@ -13,10 +13,10 @@ func TestPageRegistryIncludesCoreSurfaces(t *testing.T) {
 	required := []string{
 		"auth-login",
 		"auth-signup",
-		"app-dashboard",
-		"org-overview",
-		"org-billing",
-		"admin-dashboard",
+		"auth-forgot-password",
+		"auth-reset-password",
+		"org-billing-invoices",
+		"invite-accept",
 	}
 
 	for _, page := range required {

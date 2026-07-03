@@ -220,6 +220,15 @@ func TestVerifyAndDispatchWebhook_NoSecretSkipsVerification(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestVerifyAndDispatchWebhook_ProductionRequiresSecret(t *testing.T) {
+	t.Parallel()
+
+	svc := NewWithDependencies(config.Config{AppEnv: "production"}, nil, nil)
+	err := svc.VerifyAndDispatchWebhook(context.Background(), http.Header{}, []byte("{}"))
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrInvalidWebhookSignature)
+}
+
 func TestDispatchWebhookEvent_KnownEmailFamily(t *testing.T) {
 	t.Parallel()
 

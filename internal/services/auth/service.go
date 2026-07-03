@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -49,6 +50,10 @@ const (
 var (
 	errInvalidResetToken  = errors.New("invalid reset token")
 	errInvalidVerifyToken = errors.New("invalid verification token")
+
+	// ErrIncorrectPassword is returned when a password change is attempted with
+	// an incorrect current password.
+	ErrIncorrectPassword = errors.New("current password is incorrect")
 )
 
 func New(app core.App) Service {
@@ -296,7 +301,7 @@ func (s *service) createAuthToken(ctx context.Context, token string, kind string
 		return fmt.Errorf("find auth_tokens collection: %w", err)
 	}
 	record := core.NewRecord(collection)
-	record.Set("token", token)
+	record.Set("token", hashAuthToken(token))
 	record.Set("kind", kind)
 	record.Set("email", email)
 	record.Set("expires_at", expiresAt)
@@ -310,7 +315,7 @@ func (s *service) findTokenRecord(token string, kind string) (*core.Record, erro
 	record, err := s.app.FindFirstRecordByFilter(
 		"auth_tokens",
 		"token = {:token} && kind = {:kind}",
-		dbx.Params{"token": token, "kind": kind},
+		dbx.Params{"token": hashAuthToken(token), "kind": kind},
 	)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -332,17 +337,31 @@ func isTokenUsable(record *core.Record, now time.Time) bool {
 	return expiresAt.After(now.UTC())
 }
 
-func (s *service) UpdateProfile(_ context.Context, userID string, name string, email string) error {
+func (s *service) UpdateProfile(ctx context.Context, userID string, name string, email string) error {
 	if strings.TrimSpace(userID) == "" {
 		return domain.ErrUnauthenticated
 	}
-	if strings.TrimSpace(name) == "" || strings.TrimSpace(email) == "" {
+	trimmedName := strings.TrimSpace(name)
+	normalizedEmail := strings.ToLower(strings.TrimSpace(email))
+	if trimmedName == "" || normalizedEmail == "" {
 		return errors.New("name and email are required")
+	}
+	if s.app == nil {
+		return errors.New("auth store is not configured")
+	}
+	record, err := s.app.FindRecordById("users", userID)
+	if err != nil {
+		return fmt.Errorf("find user: %w", err)
+	}
+	record.Set("name", trimmedName)
+	record.SetEmail(normalizedEmail)
+	if err := s.app.SaveWithContext(ctx, record); err != nil {
+		return fmt.Errorf("update user profile: %w", err)
 	}
 	return nil
 }
 
-func (s *service) ChangePassword(_ context.Context, userID string, currentPassword string, newPassword string, confirmPassword string) error {
+func (s *service) ChangePassword(ctx context.Context, userID string, currentPassword string, newPassword string, confirmPassword string) error {
 	if strings.TrimSpace(userID) == "" {
 		return domain.ErrUnauthenticated
 	}
@@ -352,14 +371,49 @@ func (s *service) ChangePassword(_ context.Context, userID string, currentPasswo
 	if newPassword != confirmPassword {
 		return errors.New("password confirmation does not match")
 	}
+	if s.app == nil {
+		return errors.New("auth store is not configured")
+	}
+	record, err := s.app.FindRecordById("users", userID)
+	if err != nil {
+		return fmt.Errorf("find user: %w", err)
+	}
+	if !record.ValidatePassword(currentPassword) {
+		return ErrIncorrectPassword
+	}
+	record.Set("password", newPassword)
+	record.Set("passwordConfirm", newPassword)
+	if err := s.app.SaveWithContext(ctx, record); err != nil {
+		return fmt.Errorf("update user password: %w", err)
+	}
 	return nil
 }
 
-func (s *service) UpdateTwoFactor(_ context.Context, userID string, _ bool) error {
+func (s *service) UpdateTwoFactor(ctx context.Context, userID string, enabled bool) error {
 	if strings.TrimSpace(userID) == "" {
 		return domain.ErrUnauthenticated
 	}
+	if s.app == nil {
+		return errors.New("auth store is not configured")
+	}
+	record, err := s.app.FindRecordById("users", userID)
+	if err != nil {
+		return fmt.Errorf("find user: %w", err)
+	}
+	record.Set("two_factor_enabled", enabled)
+	if err := s.app.SaveWithContext(ctx, record); err != nil {
+		return fmt.Errorf("update two-factor setting: %w", err)
+	}
 	return nil
+}
+
+// hashAuthToken derives the at-rest representation of a single-use auth token.
+// Only the SHA-256 hash is persisted, so a leak of the auth_tokens table does
+// not expose usable reset/verification tokens. The plaintext token is only ever
+// delivered to the user via email.
+func hashAuthToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }
 
 func defaultTokenGenerator() (string, error) {

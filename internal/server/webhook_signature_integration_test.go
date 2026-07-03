@@ -28,7 +28,9 @@ func TestWebhookEndpoints_InvalidSignatures_ReturnUnauthorizedAndNoStateMutation
 
 	polarPayload := []byte(`{"type":"subscription.updated","data":{"id":"evt_unauth_1"}}`)
 	polarReq := httptest.NewRequest(http.MethodPost, "/webhooks/polar", bytes.NewReader(polarPayload))
-	polarReq.Header.Set("Polar-Signature", "t=1234567890,v1=invalid")
+	polarReq.Header.Set("webhook-id", "evt_unauth_1")
+	polarReq.Header.Set("webhook-timestamp", "1234567890")
+	polarReq.Header.Set("webhook-signature", "v1,invalid")
 	polarRec := httptest.NewRecorder()
 	mux.ServeHTTP(polarRec, polarReq)
 	require.Equal(t, http.StatusUnauthorized, polarRec.Code)

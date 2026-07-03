@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -21,8 +22,26 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// capturingAuthEmailSender records the plaintext tokens that the auth service
+// would email to the user. Tokens are hashed at rest, so the only place to
+// observe the raw token is the outbound email path.
+type capturingAuthEmailSender struct {
+	verifyToken string
+	resetToken  string
+}
+
+func (c *capturingAuthEmailSender) SendEmailVerification(_ context.Context, _ string, token string) error {
+	c.verifyToken = token
+	return nil
+}
+
+func (c *capturingAuthEmailSender) SendPasswordReset(_ context.Context, _ string, token string) error {
+	c.resetToken = token
+	return nil
+}
+
 func TestSignupVerifyInviteCheckoutAndWebhookUpdates_PersistsExpectedState(t *testing.T) {
-	app, mux := newE2ETestServer(t)
+	app, mux, sender := newE2ETestServer(t)
 
 	signupForm := url.Values{
 		"name":     {"Worker Three"},
@@ -51,8 +70,10 @@ func TestSignupVerifyInviteCheckoutAndWebhookUpdates_PersistsExpectedState(t *te
 		dbx.Params{"email": "worker3@example.com", "kind": "verify"},
 	)
 	require.NoError(t, err)
-	verifyToken := verifyTokenRecord.GetString("token")
+	// The plaintext token is delivered via email; only its hash is persisted.
+	verifyToken := sender.verifyToken
 	require.True(t, strings.HasPrefix(verifyToken, "verify_"))
+	require.NotEqual(t, verifyToken, verifyTokenRecord.GetString("token"))
 	require.True(t, verifyTokenRecord.GetDateTime("consumed_at").IsZero())
 
 	verifyReq := httptest.NewRequest(http.MethodGet, "/auth/verify-email?token="+verifyToken, nil)
@@ -67,8 +88,8 @@ func TestSignupVerifyInviteCheckoutAndWebhookUpdates_PersistsExpectedState(t *te
 
 	verifyTokenRecord, err = app.FindFirstRecordByFilter(
 		"auth_tokens",
-		"token = {:token} && kind = {:kind}",
-		dbx.Params{"token": verifyToken, "kind": "verify"},
+		"email = {:email} && kind = {:kind}",
+		dbx.Params{"email": "worker3@example.com", "kind": "verify"},
 	)
 	require.NoError(t, err)
 	require.False(t, verifyTokenRecord.GetDateTime("consumed_at").IsZero())
@@ -191,7 +212,7 @@ func TestSignupVerifyInviteCheckoutAndWebhookUpdates_PersistsExpectedState(t *te
 	require.Equal(t, int64(1), resendEventCount)
 }
 
-func newE2ETestServer(t *testing.T) (core.App, http.Handler) {
+func newE2ETestServer(t *testing.T) (core.App, http.Handler, *capturingAuthEmailSender) {
 	t.Helper()
 
 	app := testutil.NewTestApp(t)
@@ -200,11 +221,12 @@ func newE2ETestServer(t *testing.T) (core.App, http.Handler) {
 	require.NoError(t, err)
 	serveEvent := &core.ServeEvent{App: app, Router: pbRouter}
 
+	sender := &capturingAuthEmailSender{}
 	deps := &Deps{
 		Config: config.Config{
 			BaseURL: "https://app.example.test",
 		},
-		Auth: auth.New(app),
+		Auth: auth.NewWithDependencies(app, nil, nil, sender),
 		Billing: billing.New(config.Config{
 			BaseURL: "https://app.example.test",
 		}),
@@ -215,7 +237,7 @@ func newE2ETestServer(t *testing.T) (core.App, http.Handler) {
 
 	mux, err := serveEvent.Router.BuildMux()
 	require.NoError(t, err)
-	return app, mux
+	return app, mux, sender
 }
 
 func findCookieValue(cookies []*http.Cookie, name string) string {

@@ -7,12 +7,9 @@ import (
 	"net/http"
 
 	"github.com/milzamsz/go-pocket/components/layouts"
-	"github.com/milzamsz/go-pocket/components/pages/admin"
 	"github.com/milzamsz/go-pocket/components/pages/app"
 	"github.com/milzamsz/go-pocket/components/pages/auth"
 	"github.com/milzamsz/go-pocket/components/pages/marketing"
-	"github.com/milzamsz/go-pocket/components/pages/org"
-	"github.com/milzamsz/go-pocket/internal/domain"
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -35,34 +32,14 @@ var pageRegistry = map[string]pageBuilder{
 	"docs-page": func(e *core.RequestEvent) renderable {
 		return marketing.DocsPage(e.Request.PathValue("path"), "Documentation page scaffold", "<p class=\"text-sm text-muted-foreground\">Docs content scaffold.</p>")
 	},
-	"help":                      func(_ *core.RequestEvent) renderable { return marketing.HelpCenter() },
-	"auth-login":                func(_ *core.RequestEvent) renderable { return auth.Login() },
-	"auth-signup":               func(_ *core.RequestEvent) renderable { return auth.Signup() },
-	"auth-forgot-password":      func(_ *core.RequestEvent) renderable { return auth.ForgotPassword() },
-	"auth-reset-password":       func(_ *core.RequestEvent) renderable { return auth.ResetPassword() },
-	"auth-verify-email":         func(_ *core.RequestEvent) renderable { return auth.VerifyEmail() },
-	"app-dashboard":             func(_ *core.RequestEvent) renderable { return app.Dashboard() },
-	"app-onboarding":            func(_ *core.RequestEvent) renderable { return app.Onboarding() },
-	"app-settings-profile":      func(_ *core.RequestEvent) renderable { return app.SettingsProfile() },
-	"app-settings-security":     func(_ *core.RequestEvent) renderable { return app.SettingsSecurity() },
-	"app-settings-account":      func(_ *core.RequestEvent) renderable { return app.SettingsAccount() },
-	"org-overview":              func(e *core.RequestEvent) renderable { return org.Overview(e.Request.PathValue("slug")) },
-	"org-members":               func(e *core.RequestEvent) renderable { return org.Members(e.Request.PathValue("slug"), nil) },
-	"org-member-profile":        func(e *core.RequestEvent) renderable { return org.MemberProfile(e.Request.PathValue("slug"), domain.OrganizationMemberProfile{}) },
-	"org-invitations":           func(e *core.RequestEvent) renderable { return org.Invitations(e.Request.PathValue("slug")) },
-	"org-billing":               func(e *core.RequestEvent) renderable { return org.Billing(e.Request.PathValue("slug")) },
-	"org-billing-invoices":      simplePlaceholder("Billing Invoices"),
-	"org-settings":              func(e *core.RequestEvent) renderable { return org.Settings(e.Request.PathValue("slug")) },
-	"org-settings-danger":       func(e *core.RequestEvent) renderable { return org.SettingsDanger(e.Request.PathValue("slug")) },
-	"org-audit":                 func(e *core.RequestEvent) renderable { return org.Audit(e.Request.PathValue("slug")) },
-	"invite-accept":             simplePlaceholder("Accept Invitation"),
-	"admin-dashboard":           func(_ *core.RequestEvent) renderable { return admin.Dashboard(admin.DashboardStats{}) },
-	"admin-users":               func(_ *core.RequestEvent) renderable { return admin.Users(admin.UserListData{}) },
-	"admin-user-detail":         func(_ *core.RequestEvent) renderable { return admin.UserDetail(admin.UserDetailData{}) },
-	"admin-organizations":       func(_ *core.RequestEvent) renderable { return admin.Organizations(admin.OrganizationListData{}) },
-	"admin-organization-detail": func(_ *core.RequestEvent) renderable { return admin.OrganizationDetail(admin.OrganizationDetailData{}) },
-	"admin-analytics":           func(_ *core.RequestEvent) renderable { return admin.Analytics(nil) },
-	"admin-settings":            func(_ *core.RequestEvent) renderable { return admin.Settings() },
+	"help":                 func(_ *core.RequestEvent) renderable { return marketing.HelpCenter() },
+	"auth-login":           func(_ *core.RequestEvent) renderable { return auth.Login() },
+	"auth-signup":          func(_ *core.RequestEvent) renderable { return auth.Signup() },
+	"auth-forgot-password": func(_ *core.RequestEvent) renderable { return auth.ForgotPassword() },
+	"auth-reset-password":  func(_ *core.RequestEvent) renderable { return auth.ResetPassword() },
+	"auth-verify-email":    func(_ *core.RequestEvent) renderable { return auth.VerifyEmail() },
+	"org-billing-invoices": simplePlaceholder("Billing Invoices"),
+	"invite-accept":        simplePlaceholder("Accept Invitation"),
 }
 
 func Page(name string) func(e *core.RequestEvent) error {

@@ -83,6 +83,10 @@
 		@apply border-border;
 	}
 
+	[x-cloak] {
+		display: none !important;
+	}
+
 	body {
 		@apply bg-background text-foreground;
 		background-image: radial-gradient(circle at 0% 0%, color-mix(in oklab, var(--color-primary) 10%, transparent), transparent 30%), radial-gradient(circle at 100% 100%, color-mix(in oklab, var(--color-accent) 14%, transparent), transparent 35%);
@@ -94,106 +98,69 @@
 }
 
 @layer components {
+	/*
+	 * The stitch-* component classes are defined once in terms of the theme
+	 * tokens declared in @theme / .dark above. Because those custom properties
+	 * are redefined under .dark, every component below adapts to light and dark
+	 * automatically and stays in lockstep with the rest of the token system —
+	 * no second, hand-maintained gray palette.
+	 */
 	.stitch-panel {
-		background: #ffffff;
-		border: 1px solid #d8deea;
-		box-shadow: 0 12px 30px rgb(15 23 42 / 0.06);
-	}
-
-	.dark .stitch-panel {
-		background: #111319;
-		border-color: #1b1f29;
-		box-shadow: 0 18px 40px rgb(0 0 0 / 0.28);
+		background: var(--color-card);
+		border: 1px solid var(--color-border);
+		box-shadow: 0 18px 40px rgb(0 0 0 / 0.10);
 	}
 
 	.stitch-panel-soft {
-		background: #f8fafc;
-		border: 1px solid #d8deea;
-	}
-
-	.dark .stitch-panel-soft {
-		background: #0d0f14;
-		border-color: #1b1f29;
+		background: var(--color-surface-container-low);
+		border: 1px solid var(--color-border);
 	}
 
 	.stitch-glass {
-		background: rgb(255 255 255 / 0.82);
-		border: 1px solid rgb(203 213 225 / 0.9);
+		background: color-mix(in oklab, var(--color-card) 80%, transparent);
+		border: 1px solid var(--color-border);
 		backdrop-filter: blur(12px);
 	}
 
-	.dark .stitch-glass {
-		background: rgb(17 19 25 / 0.72);
-		border-color: #1b1f29;
-	}
-
 	.stitch-input {
-		background: #ffffff;
-		border: 1px solid #cbd5e1;
-		color: #111827;
-	}
-
-	.dark .stitch-input {
-		background: #0d0f14;
-		border-color: #1b1f29;
-		color: #e5e1e4;
+		background: var(--color-surface-container-lowest);
+		border: 1px solid var(--color-input);
+		color: var(--color-foreground);
 	}
 
 	.stitch-input::placeholder {
-		color: #64748b;
+		color: var(--color-muted-foreground);
 	}
 
-	.dark .stitch-input::placeholder {
-		color: #81899b;
+	.stitch-input:focus,
+	.stitch-input:focus-visible {
+		border-color: var(--color-primary);
+		outline: 2px solid color-mix(in oklab, var(--color-primary) 35%, transparent);
+		outline-offset: 0;
 	}
 
 	.stitch-row:hover,
 	.stitch-hover:hover {
-		background: #eef2ff;
-	}
-
-	.dark .stitch-row:hover,
-	.dark .stitch-hover:hover {
-		background: rgb(24 27 36 / 0.5);
+		background: var(--color-muted);
 	}
 
 	.stitch-table-head {
-		background: #f1f5f9;
-		border-bottom: 1px solid #d8deea;
-		color: #475569;
-	}
-
-	.dark .stitch-table-head {
-		background: #181b24;
-		border-bottom-color: #1b1f29;
-		color: #c7c4d7;
+		background: var(--color-surface-container);
+		border-bottom: 1px solid var(--color-border);
+		color: var(--color-muted-foreground);
 	}
 
 	.stitch-divider {
-		border-color: #d8deea;
-	}
-
-	.dark .stitch-divider {
-		border-color: #1b1f29;
+		border-color: var(--color-border);
 	}
 
 	.stitch-button-secondary {
-		background: #ffffff;
-		border: 1px solid #cbd5e1;
-		color: #1f2937;
+		background: var(--color-card);
+		border: 1px solid var(--color-input);
+		color: var(--color-foreground);
 	}
 
 	.stitch-button-secondary:hover {
-		background: #f1f5f9;
-	}
-
-	.dark .stitch-button-secondary {
-		background: #0d0f14;
-		border-color: #1b1f29;
-		color: #e5e1e4;
-	}
-
-	.dark .stitch-button-secondary:hover {
-		background: #181b24;
+		background: var(--color-muted);
 	}
 }

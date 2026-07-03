@@ -7,101 +7,102 @@ type NavItem struct {
 	Active bool
 }
 
-templ DashboardSurface(meta Meta, section string, heading string, subheading string, nav []NavItem, body templ.Component) {
+type ShellState struct {
+	ContextName        string
+	UserName           string
+	UserEmail          string
+	UserInitials       string
+	ProfileHref        string
+	PlanLabel          string
+	SubscriptionStatus string
+	ShowTrialBanner    bool
+}
+
+templ DashboardSurface(meta Meta, shell ShellState, section string, heading string, subheading string, nav []NavItem, body templ.Component) {
 	@Base(meta) {
-		<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
-			<!-- Top Alert Banner -->
-			<div class="flex items-center justify-between border-b border-accent/25 bg-accent/10 px-4 py-2.5 text-xs font-medium text-accent sm:px-6 lg:px-8">
-				<div class="flex items-center gap-2 font-display">
-					<span class="inline-flex h-2 w-2 animate-pulse rounded-full bg-accent"></span>
-					<span>You are on the Free Trial. 7 days remaining. Upgrade to Pro for advanced features.</span>
-				</div>
-				<span class="font-display text-[10px] font-semibold uppercase tracking-wider text-accent">Upgrade</span>
-			</div>
-
-			<div class="flex-1 flex overflow-hidden">
-				<!-- Sidebar Nav -->
-				<aside class="flex w-64 shrink-0 flex-col border-r border-border bg-surface-container-low">
-					<!-- Sidebar Header -->
-					<div class="flex items-center gap-3 border-b border-border px-5 py-5">
-						<div class="h-9 w-9 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-							@Icon("layout-dashboard", "h-5.5 w-5.5")
-						</div>
-						<div>
-							<div class="font-display text-sm font-bold text-foreground tracking-wide leading-tight">go-pocket</div>
-							<div class="font-display text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Enterprise Plan</div>
-						</div>
-					</div>
-
-					<!-- Navigation List -->
-					<nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-						for _, item := range nav {
-							if item.Active {
-								<a href={ item.Href } class="font-display flex items-center rounded-lg bg-indigo-600/10 border border-indigo-500/20 px-3.5 py-2.5 text-xs font-semibold text-foreground transition-all">
-									@navIcon(item.Label)
-									<span>{ item.Label }</span>
-								</a>
-							} else {
-								<a href={ item.Href } class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground">
-									@navIcon(item.Label)
-									<span>{ item.Label }</span>
-								</a>
-							}
-						}
-					</nav>
-					<div class="border-t border-border px-3 py-4">
-						<div class="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Public</div>
-						<div class="space-y-1">
-							<a href="/" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground">@Icon("layout-dashboard", "mr-2.5 h-4 w-4 shrink-0 text-indigo-400")<span>Landing</span></a>
-							<a href="/blog" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground">@Icon("filetext", "mr-2.5 h-4 w-4 shrink-0 text-indigo-400")<span>Blog</span></a>
-							<a href="/docs" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground">@Icon("filetext", "mr-2.5 h-4 w-4 shrink-0 text-indigo-400")<span>Docs</span></a>
-							<a href="/help" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground">@Icon("circle-alert", "mr-2.5 h-4 w-4 shrink-0 text-indigo-400")<span>Help</span></a>
-						</div>
-					</div>
+		<div x-data="{ navOpen: false }" class="min-h-screen bg-background font-sans text-foreground">
+			<div class="flex min-h-screen">
+				<aside
+					class="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-[var(--sidebar-width)] lg:shrink-0 lg:flex-col lg:overflow-hidden lg:border-r lg:border-border lg:bg-surface-container-low"
+					aria-label="Primary"
+				>
+					@dashboardSidebarContent(shell, section, nav, false)
 				</aside>
 
-				<!-- Main Dashboard Workspace -->
-				<div class="flex flex-1 flex-col overflow-y-auto bg-background">
-					<!-- Header / Topbar Controls -->
-					<header class="flex shrink-0 items-center justify-between border-b border-border px-8 py-5">
-						<!-- Breadcrumbs & Heading -->
-						<div class="space-y-1">
-							<div class="font-display flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-								<span>Dashboard</span>
-								<span>&rsaquo;</span>
-								<span class="text-indigo-400">{ heading }</span>
+				<div
+					x-show="navOpen"
+					x-cloak
+					@click="navOpen = false"
+					class="fixed inset-0 z-30 bg-black/50 lg:hidden"
+					aria-hidden="true"
+				></div>
+
+				<aside
+					x-show="navOpen"
+					x-cloak
+					x-transition:enter="transition ease-out duration-200"
+					x-transition:enter-start="-translate-x-full opacity-0"
+					x-transition:enter-end="translate-x-0 opacity-100"
+					x-transition:leave="transition ease-in duration-150"
+					x-transition:leave-start="translate-x-0 opacity-100"
+					x-transition:leave-end="-translate-x-full opacity-0"
+					class="fixed inset-y-0 left-0 z-40 flex w-[var(--sidebar-width)] max-w-[calc(100vw-2rem)] flex-col overflow-hidden border-r border-border bg-surface-container-low shadow-2xl lg:hidden"
+					aria-label="Primary"
+				>
+					@dashboardSidebarContent(shell, section, nav, true)
+				</aside>
+
+				<div class="flex min-h-screen min-w-0 flex-1 flex-col bg-background lg:h-screen lg:overflow-y-auto">
+					<header class="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-5 sm:px-6 lg:px-8">
+						<div class="flex min-w-0 items-center gap-3">
+							<button
+								type="button"
+								@click="navOpen = true"
+								aria-label="Open navigation"
+								:aria-expanded="navOpen"
+								class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 lg:hidden"
+							>
+								@Icon("menu", "h-4.5 w-4.5")
+							</button>
+							<div class="min-w-0 space-y-1">
+								<div class="font-display flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+									<span>{ shellContextName(shell, section) }</span>
+									<span aria-hidden="true">&rsaquo;</span>
+									<span class="text-primary">{ heading }</span>
+								</div>
+								<h1 class="font-display text-2xl font-bold text-foreground tracking-tight capitalize">{ heading }</h1>
 							</div>
-							<h1 class="font-display text-2xl font-bold text-foreground tracking-tight capitalize">{ heading }</h1>
 						</div>
 
-						<!-- Search, Notification, Profile Controls -->
-						<div class="flex items-center gap-4">
-							<!-- Search Input -->
-							<div class="relative hidden w-64 md:block">
-								<input type="text" placeholder="Search analytics..." class="font-display w-full rounded-lg stitch-input py-1.5 pl-9 pr-3 text-xs outline-none transition-colors focus:border-primary" />
+						<div class="flex items-center gap-3 sm:gap-4">
+							<div class="relative hidden w-64 max-w-full md:block">
+								<label for="dashboard-search" class="sr-only">Search</label>
+								<input id="dashboard-search" type="search" placeholder="Search..." class="font-display w-full rounded-lg stitch-input py-1.5 pl-9 pr-3 text-xs outline-none transition-colors" />
 								<div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground">
 									@Icon("search", "h-3.5 w-3.5")
 								</div>
 							</div>
 
-							<!-- Notification Bell -->
-							<button class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-colors hover:text-foreground">
+							<button type="button" aria-label="Notifications" class="rounded-lg border border-border bg-card p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
 								@Icon("bell", "h-4.5 w-4.5")
 							</button>
 
-							<!-- Light/Dark Mode Toggle -->
 							@ThemeToggle()
 
-							<!-- Avatar -->
-							<div class="h-8.5 w-8.5 rounded-full border border-indigo-500 bg-indigo-600/10 flex items-center justify-center text-xs font-semibold text-indigo-400 overflow-hidden shadow-sm">
-								@Icon("user", "h-5 w-5")
-							</div>
+							<a href={ shellProfileHref(shell) } aria-label={ shellProfileLabel(shell) } title={ shellProfileTitle(shell) } class="h-8.5 w-8.5 rounded-full border border-primary bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary overflow-hidden shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+								if shell.UserInitials != "" {
+									<span>{ shell.UserInitials }</span>
+								} else {
+									@Icon("user", "h-5 w-5")
+								}
+							</a>
 						</div>
 					</header>
 
-					<!-- Workspace Body -->
-					<main class="flex-1 p-8">
-						@body
+					<main class="flex-1 min-w-0">
+						<div class="min-w-0 p-4 sm:p-6 lg:p-8">
+							@body
+						</div>
 					</main>
 				</div>
 			</div>
@@ -109,28 +110,127 @@ templ DashboardSurface(meta Meta, section string, heading string, subheading str
 	}
 }
 
+templ dashboardSidebarContent(shell ShellState, section string, nav []NavItem, showClose bool) {
+	<div class="flex h-full min-h-0 flex-col">
+		<div class="flex items-center justify-between gap-3 border-b border-border px-5 py-5">
+			<div class="min-w-0 flex items-center gap-3">
+				<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/15 text-primary">
+					@Icon("layout-dashboard", "h-5.5 w-5.5")
+				</div>
+					<div class="min-w-0">
+						<div class="font-display text-sm font-bold text-foreground tracking-wide leading-tight">go-pocket</div>
+						<div class="font-display truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{ shellContextName(shell, section) }</div>
+						if shell.PlanLabel != "" || shell.SubscriptionStatus != "" {
+							<div class="mt-1 font-display truncate text-[10px] tracking-wide text-muted-foreground">{ shellPlanSummary(shell) }</div>
+						}
+					</div>
+			</div>
+			if showClose {
+				<button
+					type="button"
+					@click="navOpen = false"
+					aria-label="Close navigation"
+					class="rounded-md p-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 lg:hidden"
+				>
+					@Icon("x", "h-4.5 w-4.5")
+				</button>
+			}
+		</div>
+
+		<nav class="flex-1 min-h-0 space-y-1 overflow-y-auto px-3 py-4">
+			for _, item := range nav {
+				if item.Active {
+					<a href={ item.Href } aria-current="page" class="font-display flex items-center rounded-lg border border-primary/20 bg-primary/10 px-3.5 py-2.5 text-xs font-semibold text-foreground transition-all">
+						@navIcon(item.Label)
+						<span>{ item.Label }</span>
+					</a>
+				} else {
+					<a href={ item.Href } class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2.5 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+						@navIcon(item.Label)
+						<span>{ item.Label }</span>
+					</a>
+				}
+			}
+		</nav>
+
+		<div class="border-t border-border px-3 py-4">
+			<div class="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Public</div>
+			<div class="space-y-1">
+				<a href="/" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">@Icon("layout-dashboard", "mr-2.5 h-4 w-4 shrink-0 text-primary")<span>Landing</span></a>
+				<a href="/blog" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">@Icon("filetext", "mr-2.5 h-4 w-4 shrink-0 text-primary")<span>Blog</span></a>
+				<a href="/docs" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">@Icon("filetext", "mr-2.5 h-4 w-4 shrink-0 text-primary")<span>Docs</span></a>
+				<a href="/help" class="font-display flex items-center rounded-lg border border-transparent px-3.5 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">@Icon("circle-alert", "mr-2.5 h-4 w-4 shrink-0 text-primary")<span>Help</span></a>
+			</div>
+		</div>
+	</div>
+}
+
+func shellContextName(shell ShellState, fallback string) string {
+	if shell.ContextName != "" {
+		return shell.ContextName
+	}
+	return fallback
+}
+
+func shellProfileHref(shell ShellState) string {
+	if shell.ProfileHref != "" {
+		return shell.ProfileHref
+	}
+	return "/app/settings/profile"
+}
+
+func shellProfileLabel(shell ShellState) string {
+	if shell.UserName != "" {
+		return "Account settings for " + shell.UserName
+	}
+	return "Account settings"
+}
+
+func shellProfileTitle(shell ShellState) string {
+	if shell.UserName != "" && shell.UserEmail != "" {
+		return shell.UserName + " (" + shell.UserEmail + ")"
+	}
+	if shell.UserName != "" {
+		return shell.UserName
+	}
+	if shell.UserEmail != "" {
+		return shell.UserEmail
+	}
+	return "Account settings"
+}
+
+func shellPlanSummary(shell ShellState) string {
+	if shell.PlanLabel != "" && shell.SubscriptionStatus != "" {
+		return shell.PlanLabel + " • " + shell.SubscriptionStatus
+	}
+	if shell.PlanLabel != "" {
+		return shell.PlanLabel
+	}
+	return shell.SubscriptionStatus
+}
+
 templ navIcon(label string) {
 	if label == "Overview" {
-		@Icon("layout-dashboard", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("layout-dashboard", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Products" {
-		@Icon("package", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("package", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Kanban" {
-		@Icon("kanban", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("kanban", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Members" {
-		@Icon("users", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("users", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Billing" {
-		@Icon("credit-card", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("credit-card", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Settings" {
-		@Icon("settings", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("settings", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Onboarding" {
-		@Icon("arrow-right", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("arrow-right", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Profile" {
-		@Icon("user", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("user", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Security" {
-		@Icon("shield", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("shield", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else if label == "Account" {
-		@Icon("settings", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("settings", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	} else {
-		@Icon("circle-alert", "mr-2.5 h-4.5 w-4.5 shrink-0 text-indigo-400")
+		@Icon("circle-alert", "mr-2.5 h-4.5 w-4.5 shrink-0 text-primary")
 	}
 }

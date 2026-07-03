@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -170,17 +171,21 @@ func (noopClient) CreatePortalSessionURL(_ context.Context, _ string) (string, e
 
 type polarWebhookVerifier struct{}
 
+// Verify implements the Standard Webhooks specification (https://www.standardwebhooks.com),
+// which Polar uses for webhook signing. The signed content is
+// "{id}.{timestamp}.{payload}", the signature is a base64-encoded HMAC-SHA256
+// digest, and the secret is a base64 value optionally prefixed with "whsec_".
+// Both the canonical "webhook-*" headers and the legacy "svix-*" aliases are
+// accepted.
 func (v polarWebhookVerifier) Verify(headers http.Header, payload []byte, secret string) error {
 	if secret == "" {
 		return nil
 	}
-	signatureHeader := strings.TrimSpace(headers.Get("Polar-Signature"))
-	if signatureHeader == "" {
-		return ErrInvalidWebhookSignature
-	}
 
-	timestamp, signatures, err := parsePolarSignatureHeader(signatureHeader)
-	if err != nil {
+	msgID := standardWebhookHeader(headers, "webhook-id", "svix-id")
+	timestamp := standardWebhookHeader(headers, "webhook-timestamp", "svix-timestamp")
+	signatureHeader := standardWebhookHeader(headers, "webhook-signature", "svix-signature")
+	if msgID == "" || timestamp == "" || signatureHeader == "" {
 		return ErrInvalidWebhookSignature
 	}
 
@@ -188,9 +193,19 @@ func (v polarWebhookVerifier) Verify(headers http.Header, payload []byte, secret
 		return ErrInvalidWebhookSignature
 	}
 
-	expected := computePolarSignature(secret, timestamp, payload)
-	for _, signature := range signatures {
-		if hmac.Equal([]byte(signature), []byte(expected)) {
+	key, err := decodeStandardWebhookSecret(secret)
+	if err != nil {
+		return ErrInvalidWebhookSignature
+	}
+
+	expected := computeStandardWebhookSignature(key, msgID, timestamp, payload)
+	for _, candidate := range strings.Fields(signatureHeader) {
+		// Each space-separated entry is "<version>,<base64 signature>".
+		_, sig, found := strings.Cut(candidate, ",")
+		if !found {
+			sig = candidate
+		}
+		if hmac.Equal([]byte(sig), []byte(expected)) {
 			return nil
 		}
 	}
@@ -198,30 +213,29 @@ func (v polarWebhookVerifier) Verify(headers http.Header, payload []byte, secret
 	return ErrInvalidWebhookSignature
 }
 
-func parsePolarSignatureHeader(raw string) (string, []string, error) {
-	parts := strings.Split(raw, ",")
-	var timestamp string
-	signatures := make([]string, 0, len(parts))
-	for _, part := range parts {
-		token := strings.TrimSpace(part)
-		if token == "" {
-			continue
-		}
-		key, value, found := strings.Cut(token, "=")
-		if !found || key == "" || value == "" {
-			return "", nil, errors.New("invalid polar signature token")
-		}
-		switch key {
-		case "t":
-			timestamp = value
-		case "v1":
-			signatures = append(signatures, value)
+func standardWebhookHeader(headers http.Header, names ...string) string {
+	for _, name := range names {
+		if value := strings.TrimSpace(headers.Get(name)); value != "" {
+			return value
 		}
 	}
-	if timestamp == "" || len(signatures) == 0 {
-		return "", nil, errors.New("missing polar signature fields")
+	return ""
+}
+
+// decodeStandardWebhookSecret returns the raw HMAC key for a Standard Webhooks
+// secret. The canonical form is base64 with an optional "whsec_" prefix; if the
+// remainder is not valid base64 (e.g. an operator set a plain custom secret) the
+// raw bytes are used instead.
+func decodeStandardWebhookSecret(secret string) ([]byte, error) {
+	trimmed := strings.TrimSpace(secret)
+	if trimmed == "" {
+		return nil, errors.New("empty webhook secret")
 	}
-	return timestamp, signatures, nil
+	trimmed = strings.TrimPrefix(trimmed, "whsec_")
+	if decoded, err := base64.StdEncoding.DecodeString(trimmed); err == nil {
+		return decoded, nil
+	}
+	return []byte(trimmed), nil
 }
 
 func withinTimestampTolerance(timestamp string, tolerance time.Duration) bool {
@@ -236,11 +250,11 @@ func withinTimestampTolerance(timestamp string, tolerance time.Duration) bool {
 	return diff <= tolerance
 }
 
-func computePolarSignature(secret, timestamp string, payload []byte) string {
-	message := append([]byte(timestamp+"."), payload...)
-	hash := hmac.New(sha256.New, []byte(secret))
-	_, _ = hash.Write(message)
-	return hex.EncodeToString(hash.Sum(nil))
+func computeStandardWebhookSignature(key []byte, msgID, timestamp string, payload []byte) string {
+	mac := hmac.New(sha256.New, key)
+	_, _ = mac.Write([]byte(msgID + "." + timestamp + "."))
+	_, _ = mac.Write(payload)
+	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }
 
 var ErrInvalidWebhookSignature = errors.New("invalid webhook signature")
@@ -274,6 +288,10 @@ func (s *service) CreatePortalSession(ctx context.Context, orgSlug string) (stri
 }
 
 func (s *service) VerifyAndDispatchWebhook(ctx context.Context, headers http.Header, payload []byte) error {
+	if strings.TrimSpace(s.cfg.Polar.WebhookSecret) == "" && s.cfg.IsProduction() {
+		// Fail closed: never accept unsigned webhooks in production.
+		return fmt.Errorf("verify polar webhook: %w", ErrInvalidWebhookSignature)
+	}
 	if err := s.verifier.Verify(headers, payload, s.cfg.Polar.WebhookSecret); err != nil {
 		return fmt.Errorf("verify polar webhook: %w", err)
 	}

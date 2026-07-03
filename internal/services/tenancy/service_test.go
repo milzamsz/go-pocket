@@ -48,3 +48,23 @@ func TestAcceptAndDeclineInvitation(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, invite2.ID, declined.ID)
 }
+
+func TestGetOrganizationShell_ReturnsOrgMetadata(t *testing.T) {
+	repo := NewMemoryRepository()
+	svc := New(repo)
+	ctx := context.Background()
+
+	_, err := repo.CreateOrganization(ctx, domain.Organization{
+		ID:      "org-a",
+		Slug:    "acme",
+		Name:    "Acme Org",
+		OwnerID: "u1",
+	})
+	require.NoError(t, err)
+
+	got, err := svc.GetOrganizationShell(ctx, "org-a", domain.OrgRoleViewer)
+	require.NoError(t, err)
+	require.Equal(t, "Acme Org", got.Name)
+	require.Equal(t, "", got.Plan)
+	require.Equal(t, "", got.SubscriptionStatus)
+}

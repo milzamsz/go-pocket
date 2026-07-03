@@ -6,8 +6,8 @@ import (
 	"github.com/milzamsz/go-pocket/internal/domain"
 )
 
-templ Products(slug string, rows []domain.Product, q string, category string, sort string, pageNumber, pageSize, total int) {
-	@page(slug, "Products", "Manage organization inventory, stock and pricing.", ProductsBody(slug, rows, q, category, sort, pageNumber, pageSize, total))
+templ Products(shell layouts.ShellState, slug string, rows []domain.Product, q string, category string, sort string, pageNumber, pageSize, total int) {
+	@page(shell, slug, "Products", "Manage organization inventory, stock and pricing.", ProductsBody(slug, rows, q, category, sort, pageNumber, pageSize, total))
 }
 
 templ ProductsBody(slug string, rows []domain.Product, q string, category string, sort string, pageNumber, pageSize, total int) {

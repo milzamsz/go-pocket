@@ -68,6 +68,18 @@ func (r *MemoryRepository) FindMemberProfile(_ context.Context, orgID string, us
 	return domain.OrganizationMemberProfile{}, domain.ErrNotFound
 }
 
+func (r *MemoryRepository) GetOrganizationShell(_ context.Context, orgID string) (OrganizationShell, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	org, ok := r.orgs[orgID]
+	if !ok {
+		return OrganizationShell{}, domain.ErrNotFound
+	}
+	return OrganizationShell{
+		Name: org.Name,
+	}, nil
+}
+
 func (r *MemoryRepository) InviteMember(_ context.Context, orgID string, email string, role domain.OrgRole) (domain.Invitation, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

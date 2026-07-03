@@ -7,9 +7,10 @@ import (
 	"github.com/milzamsz/go-pocket/components/layouts"
 )
 
-templ Dashboard(stats DashboardStats) {
+templ Dashboard(shell layouts.ShellState, stats DashboardStats) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Admin Dashboard", Description: "Platform-level operations and health."},
+		shell,
 		"Platform Admin",
 		"Admin Dashboard",
 		"Platform-level operations and health.",
@@ -18,9 +19,10 @@ templ Dashboard(stats DashboardStats) {
 	)
 }
 
-templ Users(data UserListData) {
+templ Users(shell layouts.ShellState, data UserListData) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Users", Description: "Search and inspect user records."},
+		shell,
 		"Platform Admin",
 		"Users",
 		"Search and inspect user records.",
@@ -29,9 +31,10 @@ templ Users(data UserListData) {
 	)
 }
 
-templ UserDetail(data UserDetailData) {
+templ UserDetail(shell layouts.ShellState, data UserDetailData) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "User Detail: " + data.ID, Description: "Detailed user profile and activity."},
+		shell,
 		"Platform Admin",
 		"User Detail: "+data.ID,
 		"Detailed user profile and activity.",
@@ -40,9 +43,10 @@ templ UserDetail(data UserDetailData) {
 	)
 }
 
-templ Organizations(data OrganizationListData) {
+templ Organizations(shell layouts.ShellState, data OrganizationListData) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Organizations", Description: "Inspect tenant status and usage."},
+		shell,
 		"Platform Admin",
 		"Organizations",
 		"Inspect tenant status and usage.",
@@ -51,9 +55,10 @@ templ Organizations(data OrganizationListData) {
 	)
 }
 
-templ OrganizationDetail(data OrganizationDetailData) {
+templ OrganizationDetail(shell layouts.ShellState, data OrganizationDetailData) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Organization Detail: " + data.ID, Description: "Tenant metadata and controls."},
+		shell,
 		"Platform Admin",
 		"Organization Detail: "+data.ID,
 		"Tenant metadata and controls.",
@@ -62,9 +67,10 @@ templ OrganizationDetail(data OrganizationDetailData) {
 	)
 }
 
-templ Analytics(rows []OrganizationRow) {
+templ Analytics(shell layouts.ShellState, rows []OrganizationRow) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Analytics", Description: "Usage and retention overview."},
+		shell,
 		"Platform Admin",
 		"Analytics",
 		"Usage and retention overview.",
@@ -73,9 +79,10 @@ templ Analytics(rows []OrganizationRow) {
 	)
 }
 
-templ Settings() {
+templ Settings(shell layouts.ShellState) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Admin Settings", Description: "Platform configuration placeholders."},
+		shell,
 		"Platform Admin",
 		"Admin Settings",
 		"Platform configuration placeholders.",
@@ -84,9 +91,10 @@ templ Settings() {
 	)
 }
 
-templ Audit(data AuditListData) {
+templ Audit(shell layouts.ShellState, data AuditListData) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Admin Audit", Description: "Recent webhook and platform events."},
+		shell,
 		"Platform Admin",
 		"Admin Audit",
 		"Recent webhook and platform events.",

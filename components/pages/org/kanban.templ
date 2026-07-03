@@ -6,8 +6,8 @@ import (
 	"github.com/milzamsz/go-pocket/internal/domain"
 )
 
-templ Kanban(slug string, cols []domain.KanbanColumn, cards []domain.KanbanCard) {
-	@page(slug, "Kanban", "Interactive task board with drag-and-drop workspace pipeline.", KanbanBody(slug, cols, cards))
+templ Kanban(shell layouts.ShellState, slug string, cols []domain.KanbanColumn, cards []domain.KanbanCard) {
+	@page(shell, slug, "Kanban", "Interactive task board with drag-and-drop workspace pipeline.", KanbanBody(slug, cols, cards))
 }
 
 templ KanbanBody(slug string, cols []domain.KanbanColumn, cards []domain.KanbanCard) {

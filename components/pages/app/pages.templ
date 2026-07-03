@@ -2,9 +2,10 @@ package app
 
 import "github.com/milzamsz/go-pocket/components/layouts"
 
-templ Dashboard() {
+templ Dashboard(shell layouts.ShellState) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Dashboard", Description: "Application dashboard"},
+		shell,
 		"Application",
 		"Workspace Dashboard",
 		"Personal workspace overview with organization and billing signals.",
@@ -13,9 +14,10 @@ templ Dashboard() {
 	)
 }
 
-templ Onboarding() {
+templ Onboarding(shell layouts.ShellState) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: "Onboarding", Description: "Create your first workspace"},
+		shell,
 		"Application",
 		"Welcome aboard.",
 		"Create your first organization workspace to continue.",
@@ -24,21 +26,22 @@ templ Onboarding() {
 	)
 }
 
-templ SettingsProfile() {
-	@settingsShell("Profile", "Manage your profile details.", "/app/settings/profile")
+templ SettingsProfile(shell layouts.ShellState) {
+	@settingsShell(shell, "Profile", "Manage your profile details.", "/app/settings/profile")
 }
 
-templ SettingsSecurity() {
-	@settingsShell("Security", "Password and session controls.", "/app/settings/security")
+templ SettingsSecurity(shell layouts.ShellState) {
+	@settingsShell(shell, "Security", "Password and session controls.", "/app/settings/security")
 }
 
-templ SettingsAccount() {
-	@settingsShell("Account", "Language, theme, and account preferences.", "/app/settings/account")
+templ SettingsAccount(shell layouts.ShellState) {
+	@settingsShell(shell, "Account", "Language, theme, and account preferences.", "/app/settings/account")
 }
 
-templ settingsShell(title string, subtitle string, postAction string) {
+templ settingsShell(shell layouts.ShellState, title string, subtitle string, postAction string) {
 	@layouts.DashboardSurface(
 		layouts.Meta{Title: title + " Settings", Description: subtitle},
+		shell,
 		"Application",
 		title + " Settings",
 		subtitle,
